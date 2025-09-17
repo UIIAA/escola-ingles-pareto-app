@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import type { PaymentData } from '@/types/mercadopago';
 import {
   CheckCircle,
   CreditCard,
@@ -17,7 +18,7 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const [paymentData, setPaymentData] = useState<any>(null);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
 
   const paymentId = searchParams.get('payment_id');
   const status = searchParams.get('status');

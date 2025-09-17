@@ -1,5 +1,6 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import type { PaymentPreference, PaymentItem, CreditPackage } from '@/types/payments';
+import type { MercadoPagoWebhookNotification, PaymentData } from '@/types/mercadopago';
 
 // Configuração do Mercado Pago
 const mercadoPagoConfig = new MercadoPagoConfig({
@@ -60,7 +61,7 @@ export class MercadoPagoService {
       };
 
       // Configurações específicas por método de pagamento
-      const preferenceConfig: any = {
+      const preferenceConfig: { body: PaymentPreference } = {
         body: preference
       };
 
@@ -156,7 +157,7 @@ export class MercadoPagoService {
   /**
    * Valida webhook do Mercado Pago
    */
-  validateWebhook(webhookData: any): boolean {
+  validateWebhook(webhookData: MercadoPagoWebhookNotification): boolean {
     // Em produção, implementar validação de assinatura
     return webhookData && webhookData.type && webhookData.data;
   }
@@ -164,7 +165,7 @@ export class MercadoPagoService {
   /**
    * Processa webhook de pagamento
    */
-  async processPaymentWebhook(webhookData: any) {
+  async processPaymentWebhook(webhookData: MercadoPagoWebhookNotification) {
     try {
       if (!this.validateWebhook(webhookData)) {
         throw new Error('Webhook inválido');

@@ -168,7 +168,7 @@ const Checkout = () => {
                       ? 'border-blue-500 bg-blue-50'
                       : 'hover:bg-gray-50'
                   }`}
-                  onClick={() => setSelectedPaymentMethod(method.id as any)}
+                  onClick={() => setSelectedPaymentMethod(method.id as 'pix' | 'boleto' | 'cartao')}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
