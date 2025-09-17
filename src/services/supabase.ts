@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração do Supabase
+console.log('🔍 Environment variables debug:', {
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  VITE_SUPABASE_ANON_KEY_LENGTH: import.meta.env.VITE_SUPABASE_ANON_KEY?.length,
+  ALL_ENV: import.meta.env
+});
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
