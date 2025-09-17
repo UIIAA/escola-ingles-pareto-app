@@ -7,6 +7,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Validação de configuração
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase configuration is missing. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+} else {
+  console.log('✅ Supabase configured:', {
+    url: supabaseUrl,
+    keyLength: supabaseAnonKey?.length
+  });
 }
 
 // Criação do cliente Supabase
