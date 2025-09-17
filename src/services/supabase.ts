@@ -1,14 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração do Supabase
-console.log('🔍 Environment variables debug:', {
-  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-  VITE_SUPABASE_ANON_KEY_LENGTH: import.meta.env.VITE_SUPABASE_ANON_KEY?.length,
-  ALL_ENV: import.meta.env
-});
+const supabaseUrl = 'https://agbrdfuelvvqbvcytqvc.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFnYnJkZnVlbHZ2cWJ2Y3l0cXZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MDI3NjcsImV4cCI6MjA3MzM3ODc2N30.kETaZM0nVnoOGEb_KbMadKVwv8gHRVsxXnnYvUWsdFw';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+console.log('🔍 Using hardcoded credentials for testing');
 
 // Validação de configuração
 if (!supabaseUrl || !supabaseAnonKey) {
