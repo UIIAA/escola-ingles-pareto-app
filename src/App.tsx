@@ -13,6 +13,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import Credits from "./pages/Credits";
+import Checkout from "./pages/Checkout";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
 import TeacherLessons from "./pages/TeacherLessons";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
@@ -75,6 +78,21 @@ const App = () => {
               <Route path="/credits" element={
                 <ProtectedRoute>
                   <Layout><Credits /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/checkout" element={
+                <ProtectedRoute>
+                  <Layout><Checkout /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/payment/success" element={
+                <ProtectedRoute>
+                  <Layout><PaymentSuccess /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/payment/failure" element={
+                <ProtectedRoute>
+                  <Layout><PaymentFailure /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/teaching" element={

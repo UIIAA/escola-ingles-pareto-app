@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +13,15 @@ import {
   Star,
   Gift,
   History,
-  AlertCircle
+  AlertCircle,
+  ShoppingCart
 } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
-import { CREDIT_PACKAGES, formatCurrency } from '@/types/credits';
+import { CREDIT_PACKAGES as OLD_CREDIT_PACKAGES, formatCurrency } from '@/types/credits';
+import { CREDIT_PACKAGES } from '@/types/payments';
 
 const Credits = () => {
+  const navigate = useNavigate();
   const {
     userCredits,
     transactions,
@@ -30,18 +34,8 @@ const Credits = () => {
 
   const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
 
-  const handlePurchase = async (packageId: string, credits: number, bonusCredits: number = 0) => {
-    setPurchaseLoading(packageId);
-    try {
-      const result = await purchaseCredits(packageId, credits, bonusCredits);
-      if (result.success) {
-        // Success message could be shown via toast
-      }
-    } catch (err) {
-      console.error('Purchase error:', err);
-    } finally {
-      setPurchaseLoading(null);
-    }
+  const handlePurchase = (packageId: string) => {
+    navigate(`/checkout?package=${packageId}`);
   };
 
   const getTransactionTypeColor = (type: string) => {
@@ -170,23 +164,17 @@ const Credits = () => {
 
                 <div className="mt-4">
                   <div className="text-3xl font-bold text-blue-600">
-                    {formatCurrency(pkg.price)}
+                    R$ {pkg.price.toFixed(2)}
                   </div>
 
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <span className="text-2xl font-bold text-gray-900">{pkg.credits}</span>
                     <span className="text-gray-600">créditos</span>
-                    {pkg.bonusCredits && (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        <Gift className="w-3 h-3 mr-1" />
-                        +{pkg.bonusCredits}
-                      </Badge>
-                    )}
                   </div>
 
-                  {pkg.bonusCredits && (
+                  {pkg.discount > 0 && (
                     <div className="text-sm text-green-600 mt-1">
-                      Total: {pkg.credits + pkg.bonusCredits} créditos
+                      {pkg.discount}% de desconto incluso
                     </div>
                   )}
                 </div>
@@ -194,30 +182,23 @@ const Credits = () => {
 
               <CardContent>
                 <Button
-                  onClick={() => handlePurchase(pkg.id, pkg.credits, pkg.bonusCredits)}
-                  disabled={purchaseLoading === pkg.id}
+                  onClick={() => handlePurchase(pkg.id)}
                   className="w-full"
                   variant={pkg.popular ? "default" : "outline"}
                 >
-                  {purchaseLoading === pkg.id ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Comprar Pacote
-                    </>
-                  )}
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Comprar - R$ {pkg.price.toFixed(2)}
                 </Button>
 
-                <div className="mt-3 text-center">
+                <div className="mt-3 text-center space-y-1">
                   <div className="text-sm text-gray-500">
-                    Aulas em grupo: até {pkg.credits + (pkg.bonusCredits || 0)} aulas
+                    Aulas em grupo: até {pkg.credits} aulas
                   </div>
                   <div className="text-sm text-gray-500">
-                    Aulas individuais: até {Math.floor((pkg.credits + (pkg.bonusCredits || 0)) / 3)} aulas
+                    Aulas individuais: até {Math.floor(pkg.credits / 3)} aulas
+                  </div>
+                  <div className="text-xs text-blue-600">
+                    Válido por {pkg.duration_months} meses
                   </div>
                 </div>
               </CardContent>
