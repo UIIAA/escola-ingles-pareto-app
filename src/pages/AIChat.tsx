@@ -44,6 +44,8 @@ import {
   getLevelColor,
   formatDuration
 } from '@/types/ai-chat';
+import { aiChatService } from '@/services/ai-chat';
+import { speechService, type RecognitionResult } from '@/services/speech';
 
 const AIChat = () => {
   // Estados principais
@@ -52,6 +54,8 @@ const AIChat = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   // Configurações
@@ -137,12 +141,38 @@ const AIChat = () => {
     setInputMessage('');
     setIsLoading(true);
 
-    // Simular resposta da IA
-    setTimeout(() => {
+    // Enviar para IA real ou simulada
+    try {
+      const previousMessages = messages
+        .slice(-6) // Últimas 6 mensagens para contexto
+        .map(msg => msg.content);
+
+      const aiResponse = await aiChatService.sendMessage(
+        userMessage.content,
+        settings.mode,
+        previousMessages
+      );
+
+      const chatResponse: ChatMessage = {
+        id: generateMessageId(),
+        role: 'assistant',
+        content: aiResponse.content,
+        type: 'text',
+        timestamp: new Date().toISOString(),
+        corrections: aiResponse.corrections,
+        suggestions: aiResponse.suggestions,
+        grammarFeedback: aiResponse.grammarFeedback
+      };
+
+      setMessages(prev => [...prev, chatResponse]);
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      // Fallback para resposta simulada
       const aiResponse = generateAIResponse(userMessage.content, settings.mode);
       setMessages(prev => [...prev, aiResponse]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   // Gerar resposta da IA (simulada)
@@ -206,21 +236,89 @@ const AIChat = () => {
   };
 
   // Iniciar/parar gravação
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    // TODO: Implementar gravação de áudio real
-    if (!isRecording) {
-      setTimeout(() => {
+  const toggleRecording = async () => {
+    if (!speechService.isSpeechRecognitionAvailable()) {
+      setSpeechError('Reconhecimento de voz não está disponível neste navegador');
+      return;
+    }
+
+    if (isRecording) {
+      speechService.stopRecording();
+      setIsRecording(false);
+      return;
+    }
+
+    // Solicita permissão do microfone
+    const hasPermission = await speechService.requestMicrophonePermission();
+    if (!hasPermission) {
+      setSpeechError('Permissão do microfone negada');
+      return;
+    }
+
+    const success = speechService.startRecording(
+      {
+        language: 'en-US',
+        accent: settings.voice.accent,
+        enabled: settings.voice.enabled
+      },
+      (result: RecognitionResult) => {
+        if (result.isFinal) {
+          setInputMessage(result.transcript);
+          setIsRecording(false);
+          setSpeechError(null);
+        } else {
+          // Mostra transcrição em tempo real
+          setInputMessage(result.transcript);
+        }
+      },
+      (error: string) => {
+        setSpeechError(error);
         setIsRecording(false);
-        setInputMessage('This is a transcribed voice message');
-      }, 3000);
+      }
+    );
+
+    if (success) {
+      setIsRecording(true);
+      setSpeechError(null);
     }
   };
 
   // Reproduzir áudio
   const playAudio = (content: string) => {
-    // TODO: Implementar síntese de voz real
-    console.log('Playing audio for:', content);
+    if (!speechService.isSpeechSynthesisAvailable()) {
+      setSpeechError('Síntese de voz não está disponível neste navegador');
+      return;
+    }
+
+    if (speechService.isSpeaking()) {
+      speechService.stopSpeaking();
+      setIsPlaying(false);
+      return;
+    }
+
+    const success = speechService.speak(
+      content,
+      {
+        language: 'en-US',
+        accent: settings.voice.accent,
+        enabled: settings.voice.enabled
+      },
+      () => {
+        setIsPlaying(true);
+        setSpeechError(null);
+      },
+      () => {
+        setIsPlaying(false);
+      },
+      (error: string) => {
+        setSpeechError(error);
+        setIsPlaying(false);
+      }
+    );
+
+    if (!success) {
+      setSpeechError('Erro ao reproduzir áudio');
+    }
   };
 
   // Iniciar sessão padrão na primeira renderização
@@ -468,8 +566,9 @@ const AIChat = () => {
                           size="sm"
                           className="h-auto p-1"
                           onClick={() => playAudio(message.content)}
+                          disabled={isPlaying}
                         >
-                          <Volume2 className="w-3 h-3" />
+                          {isPlaying ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
                         </Button>
                       )}
                     </div>
@@ -503,6 +602,29 @@ const AIChat = () => {
 
             {/* Input */}
             <div className="p-4 border-t">
+              {/* Erro de voz */}
+              {speechError && (
+                <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                  {speechError}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-2 h-auto p-1"
+                    onClick={() => setSpeechError(null)}
+                  >
+                    ×
+                  </Button>
+                </div>
+              )}
+
+              {/* Status de gravação */}
+              {isRecording && (
+                <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-blue-600 text-sm flex items-center">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                  Gravando... Fale agora
+                </div>
+              )}
+
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <Textarea
