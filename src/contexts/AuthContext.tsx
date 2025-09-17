@@ -112,33 +112,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { error };
       }
 
-      // Inserir na tabela users após criar o usuário de auth
-      if (data.user) {
-        const nameParts = userData.name.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            auth_user_id: data.user.id,
-            email: email,
-            first_name: firstName,
-            last_name: lastName,
-            full_name: userData.name,
-            phone: '', // Campo vazio por enquanto
-          });
-
-        if (userError) {
-          console.error('Error creating user profile:', userError);
-          toast({
-            variant: "destructive",
-            title: "Erro no perfil",
-            description: "Conta criada, mas erro ao criar perfil. Entre em contato com suporte.",
-          });
-          return { error: userError as AuthError };
-        }
-      }
+      // TODO: Configurar trigger no Supabase para inserir automaticamente na tabela users
+      console.log('✅ User created successfully:', data.user?.id);
 
       toast({
         title: "Cadastro realizado!",
