@@ -3,8 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import Credits from "./pages/Credits";
@@ -27,23 +32,76 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-            <Route path="/catalog" element={<Layout><ClassCatalog /></Layout>} />
-            <Route path="/schedule" element={<Layout><Schedule /></Layout>} />
-            <Route path="/learning" element={<Layout><Learning /></Layout>} />
-            <Route path="/forum" element={<Layout><Forum /></Layout>} />
-            <Route path="/ai-chat" element={<Layout><AIChat /></Layout>} />
-            <Route path="/credits" element={<Layout><Credits /></Layout>} />
-            <Route path="/teaching" element={<Layout><TeacherLessons /></Layout>} />
-            <Route path="/admin" element={<Layout><Admin /></Layout>} />
-            <Route path="/profile" element={<Layout><Profile /></Layout>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<Layout><NotFound /></Layout>} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+
+              {/* Protected routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Layout><Dashboard /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/catalog" element={
+                <ProtectedRoute>
+                  <Layout><ClassCatalog /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/schedule" element={
+                <ProtectedRoute>
+                  <Layout><Schedule /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/learning" element={
+                <ProtectedRoute>
+                  <Layout><Learning /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/forum" element={
+                <ProtectedRoute>
+                  <Layout><Forum /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/ai-chat" element={
+                <ProtectedRoute>
+                  <Layout><AIChat /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/credits" element={
+                <ProtectedRoute>
+                  <Layout><Credits /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/teaching" element={
+                <ProtectedRoute requiredRole="teacher">
+                  <Layout><TeacherLessons /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><Admin /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Layout><Profile /></Layout>
+                </ProtectedRoute>
+              } />
+
+              {/* Catch-all route */}
+              <Route path="*" element={
+                <ProtectedRoute>
+                  <Layout><NotFound /></Layout>
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

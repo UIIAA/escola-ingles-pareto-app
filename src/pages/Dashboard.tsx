@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,34 +9,41 @@ import { Calendar, Clock, CreditCard, Users, BookOpen, Bell, User, Settings } fr
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState({
-    id: 'user_123',
-    email: 'usuario@exemplo.com',
-    role: 'student', // Pode ser 'student', 'teacher' ou 'master'
-    name: 'Nome do Usuário',
-    created_at: new Date().toISOString()
-  });
-  
+  const { user } = useAuth();
   const [credits, setCredits] = useState(8);
   const [hasLowCredits, setHasLowCredits] = useState(false);
+
+  // Get user data from auth context
+  const userData = user ? {
+    id: user.id,
+    email: user.email || '',
+    role: user.user_metadata?.role || 'student',
+    name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+    created_at: user.created_at || new Date().toISOString()
+  } : null;
 
   // Simular verificação de créditos baixos
   useEffect(() => {
     setHasLowCredits(credits <= 2);
   }, [credits]);
 
+  // If no user data, show loading or redirect (handled by ProtectedRoute)
+  if (!userData) {
+    return null;
+  }
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Bem-vindo, {user.name}</h1>
+          <h1 className="text-3xl font-bold">Bem-vindo, {userData.name}</h1>
           <p className="text-muted-foreground">Dashboard do sistema de aulas de inglês</p>
         </div>
         <div className="flex items-center space-x-2">
           <Badge variant="secondary" className="text-sm">
-            {user.role === 'student' && 'Aluno'}
-            {user.role === 'teacher' && 'Professor'}
-            {user.role === 'master' && 'Administrador'}
+            {userData.role === 'student' && 'Aluno'}
+            {userData.role === 'teacher' && 'Professor'}
+            {userData.role === 'master' && 'Administrador'}
           </Badge>
           <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
             <User className="h-4 w-4 mr-2" />
@@ -45,7 +53,7 @@ const Dashboard = () => {
       </div>
 
       {/* Alerta para alunos com créditos baixos */}
-      {user.role === 'student' && hasLowCredits && (
+      {userData.role === 'student' && hasLowCredits && (
         <Alert variant="warning" className="mb-6">
           <Bell className="h-4 w-4" />
           <AlertTitle>Créditos Baixos</AlertTitle>
@@ -64,7 +72,7 @@ const Dashboard = () => {
 
       {/* Cards de métricas - diferentes por perfil */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {user.role === 'student' && (
+        {userData.role === 'student' && (
           <>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -90,7 +98,7 @@ const Dashboard = () => {
           </>
         )}
 
-        {(user.role === 'teacher' || user.role === 'master') && (
+        {(userData.role === 'teacher' || userData.role === 'master') && (
           <>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -116,7 +124,7 @@ const Dashboard = () => {
           </>
         )}
 
-        {user.role === 'master' && (
+        {userData.role === 'master' && (
           <>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -159,7 +167,7 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="mr-2 h-5 w-5" />
-              {user.role === 'student' ? 'Próximas Aulas' : 'Minhas Aulas'}
+              {userData.role === 'student' ? 'Próximas Aulas' : 'Minhas Aulas'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -192,21 +200,21 @@ const Dashboard = () => {
                 <Badge variant="secondary">Confirmada</Badge>
               </div>
             </div>
-            <Button 
-              className="w-full mt-4" 
+            <Button
+              className="w-full mt-4"
               onClick={() => {
-                if (user.role === 'student') {
+                if (userData.role === 'student') {
                   navigate('/schedule');
-                } else if (user.role === 'teacher') {
+                } else if (userData.role === 'teacher') {
                   navigate('/teaching');
                 } else {
                   navigate('/admin');
                 }
               }}
             >
-              {user.role === 'student' && 'Ver todas as aulas'}
-              {user.role === 'teacher' && 'Gerenciar disponibilidade'}
-              {user.role === 'master' && 'Ver relatórios'}
+              {userData.role === 'student' && 'Ver todas as aulas'}
+              {userData.role === 'teacher' && 'Gerenciar disponibilidade'}
+              {userData.role === 'master' && 'Ver relatórios'}
             </Button>
           </CardContent>
         </Card>
@@ -219,7 +227,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {user.role === 'student' && (
+            {userData.role === 'student' && (
               <>
                 <Button 
                   className="w-full justify-start" 
@@ -239,8 +247,8 @@ const Dashboard = () => {
                 </Button>
               </>
             )}
-            
-            {user.role === 'teacher' && (
+
+            {userData.role === 'teacher' && (
               <>
                 <Button 
                   className="w-full justify-start" 
@@ -261,7 +269,7 @@ const Dashboard = () => {
               </>
             )}
             
-            {user.role === 'master' && (
+            {userData.role === 'master' && (
               <>
                 <Button 
                   className="w-full justify-start" 

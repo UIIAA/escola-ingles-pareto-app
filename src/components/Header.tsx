@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, Bell, Search, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,14 +22,16 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
-  // Mock user data - will be replaced with real auth later
-  const user = {
-    name: 'Marcos Cruz',
-    email: 'marcos@exemplo.com',
-    role: 'student', // student | teacher | master
-    avatar: null
-  };
+  // Get user data from auth context
+  const userData = user ? {
+    name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+    email: user.email || '',
+    role: user.user_metadata?.role || 'student',
+    avatar: user.user_metadata?.avatar_url || null
+  } : null;
 
   const handleSearch = (query: string) => {
     if (query.trim()) {
@@ -47,12 +51,21 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
     // TODO: Open notifications panel
   };
 
-  const handleLogout = () => {
-    toast({
-      title: "👋 Saindo...",
-      description: "Você foi desconectado com sucesso",
-    });
-    // TODO: Implement logout functionality
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao sair",
+        description: "Não foi possível fazer logout",
+      });
+    }
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
   };
 
   const getRoleLabel = (role: string) => {
@@ -76,6 +89,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  // If no user data, don't render the header (user is not authenticated)
+  if (!userData) {
+    return null;
+  }
 
   return (
     <header className="bg-white/90 backdrop-blur-md border-b border-blue-100 px-4 lg:px-8 py-4 shadow-sm">
@@ -121,8 +139,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
         <div className="flex items-center gap-3">
           {/* User Role Badge */}
           <div className="hidden sm:flex items-center gap-2">
-            <span className={`text-xs px-2 py-1 rounded-full text-white bg-gradient-to-r ${getRoleColor(user.role)}`}>
-              {getRoleLabel(user.role)}
+            <span className={`text-xs px-2 py-1 rounded-full text-white bg-gradient-to-r ${getRoleColor(userData.role)}`}>
+              {getRoleLabel(userData.role)}
             </span>
           </div>
 
@@ -147,14 +165,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
                 className="flex items-center gap-2 hover:bg-gray-100 px-2 py-1"
               >
                 <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-sm font-medium text-gray-700">{user.name}</span>
-                  <span className="text-xs text-gray-500">{user.email}</span>
+                  <span className="text-sm font-medium text-gray-700">{userData.name}</span>
+                  <span className="text-xs text-gray-500">{userData.email}</span>
                 </div>
-                <div className={`w-8 h-8 bg-gradient-to-r ${getRoleColor(user.role)} rounded-full flex items-center justify-center text-xs font-bold text-white`}>
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                <div className={`w-8 h-8 bg-gradient-to-r ${getRoleColor(userData.role)} rounded-full flex items-center justify-center text-xs font-bold text-white`}>
+                  {userData.avatar ? (
+                    <img src={userData.avatar} alt={userData.name} className="w-full h-full rounded-full object-cover" />
                   ) : (
-                    getInitials(user.name)
+                    getInitials(userData.name)
                   )}
                 </div>
               </Button>
@@ -165,11 +183,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleProfileClick}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Perfil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Configurações</span>
                 </DropdownMenuItem>
