@@ -17,7 +17,7 @@ const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
-  role: z.enum(['student', 'teacher'], {
+  role: z.enum(['student', 'teacher', 'master'], {
     required_error: 'Selecione seu perfil',
   }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -143,13 +143,14 @@ const Register = () => {
 
             <div className="space-y-2">
               <Label htmlFor="role">Perfil</Label>
-              <Select onValueChange={(value) => setValue('role', value as 'student' | 'teacher')}>
+              <Select onValueChange={(value) => setValue('role', value as 'student' | 'teacher' | 'master')}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione seu perfil" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="student">Aluno - Quero aprender inglês</SelectItem>
                   <SelectItem value="teacher">Professor - Quero ensinar inglês</SelectItem>
+                  <SelectItem value="master">Administrador - Acesso total</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (

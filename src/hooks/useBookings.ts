@@ -66,7 +66,7 @@ export const useBookings = (userId: string, userRole: 'student' | 'teacher' | 'm
     } finally {
       setLoading(false);
     }
-  }, [userId, userRole, supabase, toast]);
+  }, [userId, userRole, toast]);
 
   const createBooking = async (slotId: string): Promise<boolean> => {
     try {

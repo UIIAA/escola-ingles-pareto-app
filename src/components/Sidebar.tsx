@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -27,23 +28,31 @@ interface MenuItem {
   label: string;
   path: string;
   description?: string;
+  requiredRoles?: ('student' | 'teacher' | 'master')[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const { user } = useAuth();
+  const userRole = user?.user_metadata?.role || 'student';
 
   const menuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', description: 'Visão geral' },
-    { icon: BookOpen, label: 'Catálogo de Aulas', path: '/catalog', description: 'Explorar aulas disponíveis' },
+    { icon: BookOpen, label: 'Catálogo de Aulas', path: '/catalog', description: 'Explorar aulas disponíveis', requiredRoles: ['teacher', 'master'] },
     { icon: Calendar, label: 'Agendamento', path: '/schedule', description: 'Agendar aulas' },
     { icon: Target, label: 'Aprendizado', path: '/learning', description: 'Trilhas e progresso' },
     { icon: MessageSquare, label: 'Fórum', path: '/forum', description: 'Discussões e dúvidas' },
     { icon: Bot, label: 'Chat IA', path: '/ai-chat', description: 'Prática com IA' },
     { icon: CreditCard, label: 'Créditos', path: '/credits', description: 'Gerenciar créditos' },
-    { icon: GraduationCap, label: 'Ensino', path: '/teaching', description: 'Área do professor' },
+    { icon: GraduationCap, label: 'Ensino', path: '/teaching', description: 'Área do professor', requiredRoles: ['teacher', 'master'] },
     { icon: User, label: 'Perfil', path: '/profile', description: 'Meu perfil' },
-    { icon: Settings, label: 'Admin', path: '/admin', description: 'Administração' },
+    { icon: Settings, label: 'Admin', path: '/admin', description: 'Administração', requiredRoles: ['master'] },
   ];
+
+  // Filtrar menu items baseado no role do usuário
+  const filteredMenuItems = menuItems.filter(item =>
+    !item.requiredRoles || item.requiredRoles.includes(userRole as 'student' | 'teacher' | 'master')
+  );
 
   const sidebarVariants = {
     open: { x: 0 },
@@ -93,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Navigation */}
           <nav className="flex-1 p-4 overflow-y-auto">
             <ul className="space-y-2">
-              {menuItems.map((item) => {
+              {filteredMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
 

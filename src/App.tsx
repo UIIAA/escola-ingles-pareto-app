@@ -24,6 +24,11 @@ import ClassCatalog from "./pages/ClassCatalog";
 import Forum from "./pages/Forum";
 import AIChat from "./pages/AIChat";
 import Learning from "./pages/Learning";
+import AdminUsers from "./pages/AdminUsers";
+import AdminFinance from "./pages/AdminFinance";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminSettings from "./pages/AdminSettings";
+import AdminTeachers from "./pages/AdminTeachers";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +56,7 @@ const App = () => {
                 </ProtectedRoute>
               } />
               <Route path="/catalog" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="teacher">
                   <Layout><ClassCatalog /></Layout>
                 </ProtectedRoute>
               } />
@@ -103,6 +108,31 @@ const App = () => {
               <Route path="/admin" element={
                 <ProtectedRoute requiredRole="master">
                   <Layout><Admin /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminUsers /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/finance" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminFinance /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminAnalytics /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminSettings /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/teachers" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminTeachers /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={
