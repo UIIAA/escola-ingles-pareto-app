@@ -108,6 +108,290 @@ Todos os links do AdminDashboard funcionando sem erro 404, com conteúdo real e 
 - Code splitting recommendations provided
 - Lazy loading implementation plan created
 
+---
+
+## 🎯 PRÓXIMOS PASSOS - SISTEMA DE MONITORAMENTO INTEGRADO
+
+### 🎛️ **COMPREHENSIVE SYSTEM HEALTH DASHBOARD**
+
+Com base no sucesso da implementação do Google Calendar com interface completa de Status/Teste/Ajuda, o próximo objetivo é replicar essa arquitetura para todas as integrações críticas do sistema:
+
+#### **🔄 EXPANSÃO DO MODELO GOOGLE CALENDAR**
+
+**Template de Referência:** `/admin/settings` → aba "Calendar"
+- ✅ Status em tempo real (conectado/erro/não configurado)
+- ✅ Interface de teste integrada
+- ✅ Documentação contextual (aba Ajuda)
+- ✅ Configuração direta via UI
+
+#### **📋 INTEGRAÇÕES A IMPLEMENTAR:**
+
+### 1. **🗄️ SUPABASE HEALTH MONITOR**
+**Localização:** `/admin/settings` → aba "Database"
+
+**Status Tab:**
+- ✅ Conexão com banco de dados
+- ✅ Status das tabelas críticas (users, bookings, lesson_slots, credits)
+- ✅ Latência de queries
+- ✅ Espaço de storage utilizado
+
+**Teste Tab:**
+- ✅ **TESTES REAIS** (não mockados):
+  - Criar usuário teste
+  - Inserir/consultar agendamento
+  - Verificar créditos
+  - Testar upload de arquivo
+- ✅ Benchmark de performance
+- ✅ Teste de triggers e RLS
+
+**Ajuda Tab:**
+- ✅ Documentação de schemas
+- ✅ Troubleshooting comum
+- ✅ Links para Supabase Dashboard
+
+### 2. **💳 MERCADOPAGO INTEGRATION MONITOR**
+**Localização:** `/admin/settings` → aba "Payments"
+
+**Status Tab:**
+- ✅ Conexão com API MercadoPago
+- ✅ Status das credenciais (test/prod)
+- ✅ Webhooks configurados
+- ✅ Métodos de pagamento ativos
+
+**Teste Tab:**
+- ✅ **TRANSAÇÕES REAIS DE TESTE**:
+  - Criar preferência de pagamento
+  - Testar PIX, cartão, boleto
+  - Verificar webhooks
+  - Consultar transações
+- ✅ Sandbox environment validation
+- ✅ Webhook endpoint testing
+
+**Ajuda Tab:**
+- ✅ Configuração de webhooks
+- ✅ Troubleshooting de pagamentos
+- ✅ Links para MercadoPago Developers
+
+### 3. **🤖 AI SERVICES MONITOR**
+**Localização:** `/admin/settings` → aba "AI Services"
+
+**Status Tab:**
+- ✅ OpenAI API status
+- ✅ Anthropic API status
+- ✅ Rate limits e usage
+- ✅ Modelos disponíveis
+
+**Teste Tab:**
+- ✅ **CHAMADAS REAIS DE API**:
+  - Testar GPT-4 conversation
+  - Testar Claude response
+  - Verificar speech-to-text
+  - Testar text-to-speech
+- ✅ Performance benchmarks
+- ✅ Cost estimation
+
+**Ajuda Tab:**
+- ✅ Configuração de modelos
+- ✅ Best practices para prompts
+- ✅ Troubleshooting de APIs
+
+### 4. **📧 EMAIL SYSTEM MONITOR**
+**Localização:** `/admin/settings` → aba "Email"
+
+**Status Tab:**
+- ✅ SMTP connection status
+- ✅ Email queue status
+- ✅ Delivery rates
+- ✅ Bounce/spam rates
+
+**Teste Tab:**
+- ✅ **ENVIO REAL DE EMAILS**:
+  - Email de confirmação
+  - Reset de senha
+  - Notificações de agendamento
+  - Email marketing
+- ✅ Template rendering test
+- ✅ Deliverability test
+
+**Ajuda Tab:**
+- ✅ SMTP configuration
+- ✅ Email template editing
+- ✅ Troubleshooting delivery
+
+### 5. **⚡ SYSTEM PERFORMANCE MONITOR**
+**Localização:** `/admin/settings` → aba "Performance"
+
+**Status Tab:**
+- ✅ Application health metrics
+- ✅ Bundle size tracking
+- ✅ Core Web Vitals
+- ✅ Error rate monitoring
+
+**Teste Tab:**
+- ✅ **PERFORMANCE REAL TESTING**:
+  - Page load speed tests
+  - API response time tests
+  - Memory usage analysis
+  - Mobile performance test
+- ✅ Lighthouse score tracking
+- ✅ Bundle analyzer integration
+
+**Ajuda Tab:**
+- ✅ Performance optimization guide
+- ✅ Debugging slow queries
+- ✅ Bundle optimization tips
+
+#### **🎯 OBJETIVOS:**
+
+1. **Transparência Total** - Admin vê status real de todas integrações
+2. **Testes Reais** - Nada mockado, apenas dados/transações reais
+3. **Debugging Facilitado** - Problemas identificados rapidamente
+4. **Confiança Operacional** - Admin sabe que tudo funciona
+5. **Manutenção Proativa** - Problemas detectados antes dos usuários
+
+#### **📊 ESTIMATIVA:**
+
+- **Supabase Monitor**: 8-12 horas
+- **MercadoPago Monitor**: 10-14 horas
+- **AI Services Monitor**: 6-8 horas
+- **Email Monitor**: 6-8 horas
+- **Performance Monitor**: 8-10 horas
+
+**TOTAL**: 38-52 horas (1-2 semanas)
+
+#### **🚀 RESULTADO ESPERADO:**
+
+Dashboard administrativo com visibilidade completa e testes reais de todas as integrações do sistema, garantindo operação confiável em produção.
+
+---
+
+## 🏆 FUTURE ENHANCEMENT - GAMIFICATION CREDITS SYSTEM
+
+### 🎮 **BADGE-TO-CREDITS TRANSFORMATION**
+
+Uma evolução natural do sistema atual será a transformação das conquistas (badges) em um sistema de créditos gamificado, criando um ciclo virtuoso de engajamento e aprendizado.
+
+#### **💡 CONCEITO CENTRAL:**
+
+**"Achievement-Driven Credit Economy"** - As pessoas avançam nas conquistas e recebem créditos para continuar progredindo, criando um loop de engajamento sustentável.
+
+#### **🔄 COMO FUNCIONARÁ:**
+
+**Sistema Atual:**
+- ✅ Badges por completar lições
+- ✅ Badges por sequências (streaks)
+- ✅ Badges por participação no fórum
+- ✅ Badges por agendamentos realizados
+
+**Sistema Futuro - Gamified Credits:**
+```
+Conquista → Créditos → Mais Aulas → Novas Conquistas → Mais Créditos
+```
+
+#### **🏅 ACHIEVEMENT CATEGORIES & CREDIT REWARDS:**
+
+### 1. **📚 LEARNING ACHIEVEMENTS**
+- **Primeira Lição**: 5 créditos
+- **10 Lições Completadas**: 15 créditos
+- **50 Lições Completadas**: 50 créditos
+- **100 Lições Completadas**: 100 créditos
+- **Streak 7 dias**: 20 créditos
+- **Streak 30 dias**: 75 créditos
+- **Perfect Week** (7/7 lições): 30 créditos
+
+### 2. **🎯 ENGAGEMENT ACHIEVEMENTS**
+- **Primeira Pergunta no Fórum**: 5 créditos
+- **10 Respostas Úteis**: 25 créditos
+- **Mentor Badge** (ajudar outros): 50 créditos
+- **Community Leader**: 100 créditos
+
+### 3. **📅 CONSISTENCY ACHIEVEMENTS**
+- **Primeira Aula Agendada**: 10 créditos
+- **5 Aulas Consecutivas**: 30 créditos
+- **Student of the Month**: 150 créditos
+- **Perfect Attendance** (mês completo): 200 créditos
+
+### 4. **🌟 SPECIAL ACHIEVEMENTS**
+- **Early Adopter**: 25 créditos
+- **Bug Reporter**: 15 créditos
+- **Feature Suggestion Accepted**: 30 créditos
+- **Referral Success**: 40 créditos por indicação
+
+#### **⚖️ CREDIT ECONOMY BALANCE:**
+
+**Credit Earning Rate:**
+- Beginner: 50-100 créditos/mês
+- Active User: 150-300 créditos/mês
+- Power User: 400-600 créditos/mês
+
+**Credit Cost Structure:**
+- Individual Lesson: 30 créditos
+- Group Lesson: 20 créditos
+- Premium Content: 50 créditos
+- 1:1 Mentoring: 100 créditos
+
+#### **🎪 GAMIFICATION FEATURES:**
+
+1. **Progress Visualization**
+   - Achievement progress bars
+   - Credit balance dashboard
+   - "Next reward" countdown
+
+2. **Social Elements**
+   - Leaderboards by credits earned
+   - Achievement sharing
+   - Team challenges
+
+3. **Surprise Mechanics**
+   - Random bonus credits
+   - Double XP weekends
+   - Mystery achievements
+
+4. **Redemption Options**
+   - Extra lessons
+   - Premium content unlock
+   - Certificate upgrades
+   - Physical rewards (swag)
+
+#### **📊 BUSINESS BENEFITS:**
+
+1. **Increased Retention** - Users stay engaged for rewards
+2. **Organic Growth** - Referral achievements drive new users
+3. **Community Building** - Forum participation rewarded
+4. **Data Insights** - Detailed engagement analytics
+5. **Revenue Opportunities** - Premium credit packages
+
+#### **🛠️ IMPLEMENTATION PHASES:**
+
+**Phase 1: Foundation (4-6 weeks)**
+- Credit system database schema
+- Achievement tracking system
+- Basic credit earning/spending
+
+**Phase 2: Gamification (6-8 weeks)**
+- Achievement notification system
+- Progress visualization
+- Leaderboards and social features
+
+**Phase 3: Advanced Features (8-10 weeks)**
+- Team challenges
+- Seasonal events
+- Advanced analytics dashboard
+
+#### **📈 SUCCESS METRICS:**
+
+- **Engagement**: +40% session duration
+- **Retention**: +60% 30-day retention
+- **Referrals**: +300% organic growth
+- **Revenue**: +25% through credit purchases
+
+#### **🎯 STRATEGIC VISION:**
+
+Transform Escola Inglês Pareto from a traditional learning platform into a **gamified learning ecosystem** where progress is rewarded, community is valued, and learning becomes inherently motivating through achievement-driven credit economy.
+
+**Timeline**: 18-24 weeks for full implementation
+**Investment**: High-impact feature for long-term platform growth
+
 #### **📋 STATUS DE IMPLEMENTAÇÃO:**
 - [x] AdminUsers.tsx ✅ CONCLUÍDO
 - [x] AdminFinance.tsx ✅ CONCLUÍDO
