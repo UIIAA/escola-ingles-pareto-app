@@ -7,6 +7,12 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
+    /* Responsive Sidebar Variables */
+    --sidebar-width: 18rem;          /* 288px - Desktop expanded */
+    --sidebar-width-collapsed: 4rem; /* 64px - Desktop collapsed */
+    --sidebar-width-mobile: 18rem;   /* 288px - Mobile overlay */
+    --sidebar-transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
@@ -97,5 +103,22 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Responsive Sidebar Utilities */
+@layer components {
+  .sidebar-content-collapsed {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+
+  .sidebar-content-expanded {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+    transition: opacity 300ms ease 100ms, transform 300ms ease 100ms;
   }
 }

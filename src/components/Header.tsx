@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Bell, Search, User, LogOut, Settings } from 'lucide-react';
+import { Menu, Bell, Search, User, LogOut, Settings, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSidebar } from '@/contexts/SidebarContext';
+import { useResponsive } from '@/hooks/use-responsive';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const { mode, isCollapsed, toggle } = useSidebar();
+  const { isMobile, isTablet, isDesktop } = useResponsive();
   const navigate = useNavigate();
 
   // Get user data from auth context
@@ -99,15 +103,31 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
     <header className="bg-white/90 backdrop-blur-md border-b border-blue-100 px-4 lg:px-8 py-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onMenuClick}
-            className="lg:hidden text-gray-700 hover:bg-gray-100"
-          >
-            <Menu size={20} />
-          </Button>
+          {/* Responsive Menu/Toggle Button */}
+          {!isDesktop && (
+            /* Mobile/Tablet - Hamburger Menu */
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMenuClick}
+              className="text-gray-700 hover:bg-gray-100"
+            >
+              <Menu size={20} />
+            </Button>
+          )}
+
+          {isDesktop && (
+            /* Desktop - Sidebar Toggle */
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggle}
+              className="text-gray-700 hover:bg-gray-100"
+              title={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
+            >
+              {isCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+            </Button>
+          )}
 
           {/* Search Bar */}
           <div className="hidden md:flex items-center gap-2 bg-gray-50 rounded-lg px-4 py-2 min-w-[350px] border border-gray-200 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">
