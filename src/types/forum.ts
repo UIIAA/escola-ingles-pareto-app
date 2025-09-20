@@ -35,6 +35,7 @@ export interface ForumTopic {
   lastReplyBy?: ForumUser;
   tags: string[];
   isPinned: boolean;
+  isLocked: boolean;
   isResolved: boolean;
   votes: {
     upvotes: number;
@@ -152,6 +153,9 @@ export const FORUM_CATEGORIES: Record<ForumCategory, ForumCategoryInfo> = {
     repliesCount: 0
   }
 };
+
+// Array de categorias para uso em formulários
+export const FORUM_CATEGORIES_ARRAY: ForumCategory[] = ['grammar', 'vocabulary', 'conversation', 'culture', 'homework'];
 
 // Badges disponíveis para usuários
 export const USER_BADGES = {

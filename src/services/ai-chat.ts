@@ -232,50 +232,217 @@ export class AIChatService {
   }
 
   /**
-   * Fallback com respostas simuladas quando API não está disponível
+   * Enhanced fallback with context-aware simulated responses
    */
   private getSimulatedResponse(message: string, mode: ConversationMode): AIResponse {
-    const responses = {
-      practice: [
-        "That's interesting! Can you tell me more about that?",
-        "I understand. How do you feel about this situation?",
-        "That sounds like a great experience! What was the best part?",
-        "Let me help you express that better. You could say..."
-      ],
-      grammar: [
-        "Good effort! Let me help you with the grammar here.",
-        "I notice a small grammar mistake. The correct form would be...",
-        "Perfect grammar! You're improving nicely.",
-        "Let's practice this structure: Subject + Verb + Object"
-      ],
-      business: [
-        "In a business context, you might say...",
-        "That's a good professional expression. Here's another way...",
-        "For formal emails, consider using...",
-        "In presentations, it's common to say..."
-      ],
-      exam: [
-        "For IELTS speaking, remember to elaborate on your points.",
-        "Good vocabulary choice! Try to add more descriptive words.",
-        "Practice linking your ideas with transition words.",
-        "Remember to answer all parts of the question."
-      ],
-      free: [
-        "That's fascinating! Tell me more.",
-        "I love talking about that topic!",
-        "What's your opinion on this?",
-        "Have you experienced something similar?"
-      ]
-    };
+    const lowerMessage = message.toLowerCase();
 
-    const modeResponses = responses[mode] || responses.free;
-    const randomResponse = modeResponses[Math.floor(Math.random() * modeResponses.length)];
+    // Analyze message for context-aware responses
+    const isQuestion = message.includes('?') || lowerMessage.includes('how') || lowerMessage.includes('what') || lowerMessage.includes('why');
+    const isGreeting = lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('good morning');
+    const isPastTense = lowerMessage.includes('yesterday') || lowerMessage.includes('last') || lowerMessage.includes('ago');
+    const isFutureTense = lowerMessage.includes('tomorrow') || lowerMessage.includes('will') || lowerMessage.includes('going to');
+    const hasGrammarError = this.detectSimpleGrammarErrors(message);
+
+    // Mode-specific intelligent responses
+    switch (mode) {
+      case 'practice':
+        return this.generatePracticeResponse(message, isQuestion, isGreeting);
+
+      case 'grammar':
+        return this.generateGrammarResponse(message, hasGrammarError);
+
+      case 'business':
+        return this.generateBusinessResponse(message, lowerMessage);
+
+      case 'exam':
+        return this.generateExamResponse(message, lowerMessage);
+
+      case 'free':
+      default:
+        return this.generateFreeResponse(message, isQuestion, isPastTense, isFutureTense);
+    }
+  }
+
+  private detectSimpleGrammarErrors(message: string): string[] {
+    const errors: string[] = [];
+    const lowerMessage = message.toLowerCase();
+
+    // Simple grammar error detection
+    if (lowerMessage.includes('i am go') || lowerMessage.includes('i am going to go')) {
+      errors.push('Use "I am going" or "I will go" instead of "I am go"');
+    }
+    if (lowerMessage.includes('i have 20 years') && !lowerMessage.includes('old')) {
+      errors.push('Say "I am 20 years old" instead of "I have 20 years"');
+    }
+    if (lowerMessage.includes('i am agree')) {
+      errors.push('Say "I agree" instead of "I am agree"');
+    }
+    if (lowerMessage.includes('since 2 years')) {
+      errors.push('Say "for 2 years" instead of "since 2 years"');
+    }
+
+    return errors;
+  }
+
+  private generatePracticeResponse(message: string, isQuestion: boolean, isGreeting: boolean): AIResponse {
+    if (isGreeting) {
+      const greetingResponses = [
+        "Hello! I'm so glad you're here to practice English with me. How are you doing today?",
+        "Hi there! Welcome to our conversation practice. What would you like to talk about?",
+        "Good to see you! I'm excited to help you improve your English. How's your day going?"
+      ];
+      return {
+        content: greetingResponses[Math.floor(Math.random() * greetingResponses.length)],
+        suggestions: ["Tell me about your hobbies", "Describe your favorite place", "Share what you did today"],
+        corrections: []
+      };
+    }
+
+    if (isQuestion) {
+      const questionResponses = [
+        "That's a great question! Let me think about that...",
+        "I love curious minds! Here's what I think about that...",
+        "Excellent question! It makes me think about..."
+      ];
+      return {
+        content: questionResponses[Math.floor(Math.random() * questionResponses.length)],
+        suggestions: ["Ask follow-up questions", "Share your own opinion", "Give specific examples"],
+        corrections: []
+      };
+    }
+
+    const practiceResponses = [
+      "That's really interesting! Can you give me more details about that?",
+      "I can see you're thinking carefully about this. What happened next?",
+      "Your English is improving! How do you feel about this topic?",
+      "That sounds like quite an experience. What was the most memorable part?"
+    ];
 
     return {
-      content: randomResponse,
-      corrections: mode === 'grammar' ? ['*small correction example*'] : [],
-      suggestions: ['Try expanding your answer', 'Use more descriptive adjectives'],
-      grammarFeedback: mode === 'grammar' ? 'Remember to check verb tenses' : undefined
+      content: practiceResponses[Math.floor(Math.random() * practiceResponses.length)],
+      suggestions: ["Use more descriptive adjectives", "Add more details to your stories", "Practice expressing emotions"],
+      corrections: []
+    };
+  }
+
+  private generateGrammarResponse(message: string, hasErrors: string[]): AIResponse {
+    if (hasErrors.length > 0) {
+      return {
+        content: "I can help you improve that sentence! Let me show you the correct form.",
+        corrections: hasErrors,
+        suggestions: ["Practice this structure with different examples", "Review the grammar rule"],
+        grammarFeedback: "Remember: " + hasErrors[0]
+      };
+    }
+
+    const grammarResponses = [
+      "Excellent grammar! Your sentence structure is very clear and correct.",
+      "Perfect! You used the right tense and word order. Well done!",
+      "Great job with the grammar. Your English is really improving!",
+      "That's grammatically perfect! Now try making it even more complex."
+    ];
+
+    return {
+      content: grammarResponses[Math.floor(Math.random() * grammarResponses.length)],
+      corrections: [],
+      suggestions: ["Try using more complex sentence structures", "Add subordinate clauses", "Practice with different verb tenses"],
+      grammarFeedback: "Your grammar is solid! Keep practicing complex structures."
+    };
+  }
+
+  private generateBusinessResponse(message: string, lowerMessage: string): AIResponse {
+    if (lowerMessage.includes('email') || lowerMessage.includes('write')) {
+      return {
+        content: "For professional emails, start with a clear subject line and use formal greetings like 'Dear' or 'Hello'. Be concise and specific.",
+        suggestions: ["Use 'I am writing to...' to state your purpose", "End with 'Best regards' or 'Sincerely'", "Include a clear call to action"],
+        corrections: []
+      };
+    }
+
+    if (lowerMessage.includes('meeting') || lowerMessage.includes('presentation')) {
+      return {
+        content: "In business meetings, use phrases like 'I'd like to propose...', 'From my perspective...', or 'Let me suggest...' to sound professional.",
+        suggestions: ["Practice transition phrases", "Use data to support your points", "Ask clarifying questions"],
+        corrections: []
+      };
+    }
+
+    const businessResponses = [
+      "In professional contexts, that would be expressed as: [formal version of your statement]",
+      "Excellent business vocabulary! You could also say it this way to sound more formal...",
+      "Good professional expression. Here's how to make it even more polished...",
+      "Perfect for business communication. Consider adding these formal phrases..."
+    ];
+
+    return {
+      content: businessResponses[Math.floor(Math.random() * businessResponses.length)],
+      suggestions: ["Use more formal vocabulary", "Practice diplomatic language", "Master professional email phrases"],
+      corrections: []
+    };
+  }
+
+  private generateExamResponse(message: string, lowerMessage: string): AIResponse {
+    if (lowerMessage.includes('ielts') || lowerMessage.includes('toefl')) {
+      return {
+        content: "For exam success, remember to fully answer the question, use a range of vocabulary, and structure your response clearly with introduction, body, and conclusion.",
+        suggestions: ["Use transition words like 'Furthermore', 'Moreover', 'In contrast'", "Give specific examples", "Practice time management"],
+        corrections: []
+      };
+    }
+
+    const examResponses = [
+      "Good response! For higher scores, elaborate more on your main points and use advanced vocabulary.",
+      "Strong answer! Try to add more sophisticated linking words and complex sentence structures.",
+      "Well structured! Now focus on using more academic vocabulary and varied sentence patterns.",
+      "Excellent content! For maximum points, include more detailed examples and explanations."
+    ];
+
+    return {
+      content: examResponses[Math.floor(Math.random() * examResponses.length)],
+      suggestions: ["Use advanced vocabulary", "Practice complex grammar structures", "Time your responses", "Add more supporting details"],
+      corrections: []
+    };
+  }
+
+  private generateFreeResponse(message: string, isQuestion: boolean, isPastTense: boolean, isFutureTense: boolean): AIResponse {
+    if (isPastTense) {
+      const pastResponses = [
+        "That sounds like it was quite an experience! What did you learn from it?",
+        "Interesting! How did that make you feel at the time?",
+        "I can imagine! Would you do it differently if you had another chance?"
+      ];
+      return {
+        content: pastResponses[Math.floor(Math.random() * pastResponses.length)],
+        suggestions: ["Use past perfect tense for earlier events", "Add more emotional details", "Describe the sequence of events"],
+        corrections: []
+      };
+    }
+
+    if (isFutureTense) {
+      const futureResponses = [
+        "That sounds exciting! What are you most looking forward to?",
+        "Great plans! How are you preparing for that?",
+        "Wonderful! I hope everything goes well. What do you expect will happen?"
+      ];
+      return {
+        content: futureResponses[Math.floor(Math.random() * futureResponses.length)],
+        suggestions: ["Use 'will' for predictions", "Use 'going to' for plans", "Express probability with 'might' or 'probably'"],
+        corrections: []
+      };
+    }
+
+    const freeResponses = [
+      "That's really fascinating! I'd love to hear more about your perspective on this.",
+      "You've got me thinking! What's the most important aspect of this for you?",
+      "I really enjoy our conversations! How do you see this affecting your daily life?",
+      "That's such an interesting point of view! Have you always felt this way about it?"
+    ];
+
+    return {
+      content: freeResponses[Math.floor(Math.random() * freeResponses.length)],
+      suggestions: ["Express your opinions clearly", "Use examples from your experience", "Ask questions to keep the conversation going"],
+      corrections: []
     };
   }
 }

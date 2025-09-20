@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { render } from '@/__tests__/test-utils';
 import Header from './Header';
-import { useToast } from '@/hooks/use-toast';
 
 // Mock the useToast hook
 const mockToast = vi.fn();

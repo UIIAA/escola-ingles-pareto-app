@@ -4,6 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -43,6 +50,7 @@ const ClassCatalog = () => {
   const [selectedType, setSelectedType] = useState<LessonType | 'all'>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | 'all'>('all');
   const [selectedTheme, setSelectedTheme] = useState<UniversalTheme | 'all'>('all');
+  const [selectedTemplate, setSelectedTemplate] = useState<LessonTemplate | null>(null);
 
   // Filtrar templates baseado nos filtros selecionados
   const filteredTemplates = useMemo(() => {
@@ -365,10 +373,7 @@ const ClassCatalog = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      // TODO: Show template details modal
-                      alert(`Detalhes do template: ${template.topic}`);
-                    }}
+                    onClick={() => setSelectedTemplate(template)}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -404,6 +409,135 @@ const ClassCatalog = () => {
           </Card>
         )}
       </div>
+
+      {/* Template Details Modal */}
+      <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedTemplate && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-blue-600" />
+                  {selectedTemplate.topic}
+                </DialogTitle>
+                <DialogDescription className="text-base">
+                  Detalhes completos do template de aula
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 mt-4">
+                {/* Basic Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Tipo de Aula</label>
+                    <Badge variant="outline" className="block w-fit mt-1">
+                      {selectedTemplate.type}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Dificuldade</label>
+                    <Badge variant="outline" className="block w-fit mt-1">
+                      {selectedTemplate.difficulty}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Duração</label>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{selectedTemplate.duration} minutos</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Participantes</label>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{selectedTemplate.minParticipants}-{selectedTemplate.maxParticipants} alunos</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Descrição</label>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    {selectedTemplate.description}
+                  </p>
+                </div>
+
+                {/* Learning Objectives */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Objetivos de Aprendizado</label>
+                  <ul className="space-y-2">
+                    {selectedTemplate.objectives.map((objective, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <GraduationCap className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <span>{objective}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Materials */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Materiais Necessários</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTemplate.materials.map((material, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {material}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Activities */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-3">Atividades da Aula</label>
+                  <div className="space-y-3">
+                    {selectedTemplate.activities.map((activity, index) => (
+                      <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </div>
+                          <h4 className="font-medium text-sm">{activity.name}</h4>
+                          <Badge variant="outline" className="text-xs ml-auto">
+                            {activity.duration}min
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-8">{activity.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Tags</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTemplate.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button className="flex-1">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Agendar Esta Aula
+                  </Button>
+                  <Button variant="outline">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Perguntas
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

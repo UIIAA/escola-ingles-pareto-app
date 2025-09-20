@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -51,6 +53,9 @@ import {
 } from '@/types/curriculum';
 
 const Learning = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   // Estados
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<DifficultyLevel | 'all'>('all');
@@ -139,14 +144,45 @@ const Learning = () => {
 
   const handleStartPath = (pathId: string) => {
     console.log('Starting learning path:', pathId);
-    // TODO: Implement path start logic
-    alert(`Iniciando trilha de aprendizado!\nEm breve você será redirecionado para a primeira lição.`);
+
+    // Store current path in localStorage for persistence
+    localStorage.setItem('currentLearningPath', pathId);
+    localStorage.setItem('currentLesson', '1'); // Start from first lesson
+    localStorage.setItem('pathStartedAt', new Date().toISOString());
+
+    // Find the selected path to get its details
+    const selectedPath = LEARNING_PATHS.find(path => path.id === pathId);
+    if (selectedPath) {
+      localStorage.setItem('currentPathTitle', selectedPath.title);
+    }
+
+    // Navigate to first lesson or path overview
+    navigate(`/learning/path/${pathId}/lesson/1`);
+
+    toast({
+      title: "Learning Path Started!",
+      description: `You've started "${selectedPath?.title}". Redirecting to your first lesson...`,
+    });
   };
 
   const handleContinuePath = () => {
     console.log('Continuing current path');
-    // TODO: Implement continue logic
-    alert('Continuando seus estudos...\nRedirecionando para próxima lição!');
+
+    // Get current path and lesson from localStorage
+    const currentPath = localStorage.getItem('currentLearningPath') || 'beginner-foundation';
+    const currentLesson = localStorage.getItem('currentLesson') || '1';
+    const pathTitle = localStorage.getItem('currentPathTitle') || 'English Foundation';
+
+    // Update last activity timestamp
+    localStorage.setItem('lastStudySession', new Date().toISOString());
+
+    // Navigate to current lesson
+    navigate(`/learning/path/${currentPath}/lesson/${currentLesson}`);
+
+    toast({
+      title: "Continuing Your Studies",
+      description: `Returning to "${pathTitle}" - Lesson ${currentLesson}`,
+    });
   };
 
   return (
