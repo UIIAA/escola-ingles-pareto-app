@@ -460,7 +460,7 @@ const ClassCatalog = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">Descrição</label>
                   <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    {selectedTemplate.description}
+                    {selectedTemplate.requiredFields?.description || 'Descrição não disponível'}
                   </p>
                 </div>
 
@@ -468,7 +468,7 @@ const ClassCatalog = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">Objetivos de Aprendizado</label>
                   <ul className="space-y-2">
-                    {selectedTemplate.objectives.map((objective, index) => (
+                    {(selectedTemplate.requiredFields?.objectives || []).map((objective, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
                         <GraduationCap className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                         <span>{objective}</span>
@@ -481,7 +481,7 @@ const ClassCatalog = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">Materiais Necessários</label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedTemplate.materials.map((material, index) => (
+                    {(selectedTemplate.requiredFields?.materials || []).map((material, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
                         {material}
                       </Badge>
@@ -493,30 +493,26 @@ const ClassCatalog = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-3">Atividades da Aula</label>
                   <div className="space-y-3">
-                    {selectedTemplate.activities.map((activity, index) => (
+                    {(selectedTemplate.templateInfo?.suggestedActivities || []).map((activity, index) => (
                       <div key={index} className="border rounded-lg p-3 bg-gray-50">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
                             {index + 1}
                           </div>
-                          <h4 className="font-medium text-sm">{activity.name}</h4>
-                          <Badge variant="outline" className="text-xs ml-auto">
-                            {activity.duration}min
-                          </Badge>
+                          <h4 className="font-medium text-sm">{activity}</h4>
                         </div>
-                        <p className="text-sm text-gray-600 ml-8">{activity.description}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Tags */}
+                {/* Key Vocabulary */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-2">Tags</label>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">Vocabulário-chave</label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedTemplate.tags.map((tag, index) => (
+                    {(selectedTemplate.templateInfo?.keyVocabulary || []).map((word, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
-                        #{tag}
+                        {word}
                       </Badge>
                     ))}
                   </div>

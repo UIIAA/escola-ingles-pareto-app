@@ -389,7 +389,32 @@ const AdminFinance = () => {
         </TabsContent>
 
         <TabsContent value="reports">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            {/* Ações de Gestão */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ações de Gestão de Pagamentos</CardTitle>
+                <CardDescription>Ferramentas administrativas para gestão financeira</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button className="h-20 flex flex-col gap-2">
+                    <Receipt className="h-6 w-6" />
+                    <span>Reprocessar Pagamentos</span>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                    <Download className="h-6 w-6" />
+                    <span>Exportar Relatório</span>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                    <TrendingUp className="h-6 w-6" />
+                    <span>Análise de Tendências</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>Resumo Mensal</CardTitle>
@@ -454,6 +479,7 @@ const AdminFinance = () => {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

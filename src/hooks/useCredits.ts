@@ -3,7 +3,7 @@ import {
   UserCredits,
   CreditTransaction,
   calculateCreditsNeeded,
-  canAffordLesson
+  canAffordActivity
 } from '@/types/credits';
 
 // Mock user ID - in real app this would come from auth context
@@ -123,7 +123,7 @@ export const useCredits = () => {
     try {
       const creditsNeeded = calculateCreditsNeeded(lessonType);
 
-      if (!userCredits || !canAffordLesson(userCredits.availableCredits, lessonType)) {
+      if (!userCredits || !canAffordActivity(userCredits.availableCredits, lessonType)) {
         return { success: false, error: 'Créditos insuficientes' };
       }
 
@@ -221,8 +221,8 @@ export const useCredits = () => {
     purchaseCredits,
     useCreditsForLesson,
     refundCredits,
-    canAffordLesson: (lessonType: string) =>
-      userCredits ? canAffordLesson(userCredits.availableCredits, lessonType) : false,
+    canAffordActivity: (lessonType: string) =>
+      userCredits ? canAffordActivity(userCredits.availableCredits, lessonType) : false,
     getCreditsNeeded: calculateCreditsNeeded
   };
 };

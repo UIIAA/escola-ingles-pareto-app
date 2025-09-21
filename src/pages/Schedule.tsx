@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StudentBooking from "@/components/StudentBooking";
 import CreditBalance from "@/components/CreditBalance";
+import { useCredits } from "@/hooks/useCredits";
 
 const Schedule = () => {
+  const navigate = useNavigate();
+  const { userCredits } = useCredits();
+
   const handleBuyCredits = () => {
-    alert("Redirecionar para a página de compra de créditos");
+    navigate("/credits");
   };
 
   return (
@@ -30,7 +34,7 @@ const Schedule = () => {
         </div>
 
         <div>
-          <CreditBalance credits={8} onBuyCredits={handleBuyCredits} />
+          <CreditBalance credits={userCredits?.available || 0} onBuyCredits={handleBuyCredits} />
         </div>
       </div>
     </div>

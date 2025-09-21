@@ -22,9 +22,9 @@ export const useBookings = (userId: string, userRole: 'student' | 'teacher' | 'm
       if (!supabase) {
         throw new Error('Supabase client is not configured');
       }
-      
+
       setLoading(true);
-      
+
       let query = supabase
         .from('bookings')
         .select(`
@@ -33,28 +33,28 @@ export const useBookings = (userId: string, userRole: 'student' | 'teacher' | 'm
             id, teacher_id, datetime, duration, status, google_event_id
           )
         `);
-      
+
       // Filtra por usuário dependendo do papel
       if (userRole === 'student') {
         query = query.eq('student_id', userId);
       } else if (userRole === 'teacher') {
         query = query.eq('lesson_slots.teacher_id', userId);
       }
-      
+
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       const bookingsData = data || [];
       setBookings(bookingsData);
-      
+
       // Extrai os slots únicos
       const uniqueSlots = bookingsData
         .map((b: Booking & { lesson_slots: LessonSlot }) => b.lesson_slots)
         .filter((slot: LessonSlot, index: number, self: LessonSlot[]) =>
           index === self.findIndex((s: LessonSlot) => s.id === slot.id)
         );
-      
+
       setSlots(uniqueSlots);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);

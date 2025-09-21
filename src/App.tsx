@@ -29,6 +29,7 @@ import AdminFinance from "./pages/AdminFinance";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
 import AdminTeachers from "./pages/AdminTeachers";
+import AdminLessons from "./pages/AdminLessons";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +134,11 @@ const App = () => {
               <Route path="/admin/teachers" element={
                 <ProtectedRoute requiredRole="master">
                   <Layout><AdminTeachers /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/lessons" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminLessons /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

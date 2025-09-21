@@ -149,6 +149,13 @@ const AdminDashboard = () => {
       color: 'bg-blue-500'
     },
     {
+      title: 'Gerenciar Professores',
+      description: 'Cadastrar e gerenciar professores',
+      action: () => navigate('/admin/teachers'),
+      icon: UserPlus,
+      color: 'bg-indigo-500'
+    },
+    {
       title: 'Relatórios Financeiros',
       description: 'Visualizar receitas e pagamentos',
       action: () => navigate('/admin/finance'),
@@ -168,6 +175,13 @@ const AdminDashboard = () => {
       action: () => navigate('/admin/settings'),
       icon: Settings,
       color: 'bg-gray-500'
+    },
+    {
+      title: 'Gerenciar Aulas',
+      description: 'Templates e agendamentos de aulas',
+      action: () => navigate('/admin/lessons'),
+      icon: BookOpen,
+      color: 'bg-orange-500'
     }
   ];
 
@@ -467,7 +481,7 @@ const AdminDashboard = () => {
           <CardTitle>Ações Administrativas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickActions.map((action, index) => (
               <div
                 key={index}
