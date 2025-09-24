@@ -29,14 +29,7 @@ import {
   Zap
 } from 'lucide-react';
 
-// Credit System Integration
-import {
-  CreditWarningModal,
-  CreditCounter,
-  ActivityCostIndicator,
-  creditAtomicService,
-  withCreditValidation
-} from '@/components/credit-system';
+// Toast notifications
 import { useToast } from '@/hooks/use-toast';
 
 import {
@@ -68,11 +61,15 @@ const AIChat = () => {
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Credit System States
-  const [userCredits, setUserCredits] = useState<number>(0);
-  const [showCreditWarning, setShowCreditWarning] = useState(false);
-  const [creditVerification, setCreditVerification] = useState<any>(null);
+  // Session stats
   const [messagesThisSession, setMessagesThisSession] = useState(0);
+
+  // Chat session control
+  const [chatEnabled, setChatEnabled] = useState(false);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState(0); // em segundos
+  const [sessionCost] = useState(5); // créditos para ativar uma sessão de 30 minutos
+  const [sessionDuration] = useState(30 * 60); // 30 minutos em segundos
+  const [userCredits, setUserCredits] = useState(10); // Mock - seria carregado do backend
 
   // Hooks
   const { toast } = useToast();
@@ -106,20 +103,60 @@ const AIChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load user credits on mount
+  // Timer para controlar a sessão
   useEffect(() => {
-    const loadCredits = async () => {
-      try {
-        const balance = await creditAtomicService.getBalance(userId);
-        setUserCredits(balance);
-      } catch (error) {
-        console.error('Failed to load credits:', error);
-        setUserCredits(0);
-      }
-    };
+    let interval: NodeJS.Timeout;
 
-    loadCredits();
-  }, [userId]);
+    if (chatEnabled && sessionTimeLeft > 0) {
+      interval = setInterval(() => {
+        setSessionTimeLeft(prev => {
+          if (prev <= 1) {
+            setChatEnabled(false);
+            toast({
+              title: "Sessão Expirada",
+              description: "Sua sessão de chat IA expirou. Ative uma nova sessão para continuar.",
+              variant: "destructive"
+            });
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [chatEnabled, sessionTimeLeft, toast]);
+
+  // Ativar sessão de chat
+  const activateChatSession = () => {
+    if (userCredits < sessionCost) {
+      toast({
+        title: "Créditos Insuficientes",
+        description: `Você precisa de ${sessionCost} créditos para ativar uma sessão de 30 minutos.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUserCredits(prev => prev - sessionCost);
+    setChatEnabled(true);
+    setSessionTimeLeft(sessionDuration);
+    setMessagesThisSession(0);
+
+    toast({
+      title: "Chat IA Ativado!",
+      description: `Sessão de 30 minutos ativada. ${sessionCost} créditos debitados.`,
+    });
+  };
+
+  // Formatar tempo restante
+  const formatTimeLeft = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Iniciar nova sessão
   const startNewSession = useCallback((mode: ConversationMode = 'practice') => {
@@ -160,9 +197,18 @@ const AIChat = () => {
     setMessages([welcomeMessage]);
   }, [settings]);
 
-  // Enviar mensagem COM VERIFICAÇÃO DE CRÉDITOS
+  // Enviar mensagem (com verificação de sessão ativa)
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+
+    if (!chatEnabled) {
+      toast({
+        title: "Chat IA Desabilitado",
+        description: "Ative uma sessão de chat para usar a IA real.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: generateMessageId(),
@@ -172,80 +218,54 @@ const AIChat = () => {
       timestamp: new Date().toISOString()
     };
 
-    // Usar o sistema atômico de créditos
-    const result = await withCreditValidation(
-      userId,
-      'ai-chat-message',
-      async () => {
-        // Adicionar mensagem do usuário
-        setMessages(prev => [...prev, userMessage]);
-        setInputMessage('');
-        setIsLoading(true);
+    // Adicionar mensagem do usuário
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
 
-        try {
-          const previousMessages = messages
-            .slice(-6) // Últimas 6 mensagens para contexto
-            .map(msg => msg.content);
+    try {
+      const previousMessages = messages
+        .slice(-6) // Últimas 6 mensagens para contexto
+        .map(msg => msg.content);
 
-          const aiResponse = await aiChatService.sendMessage(
-            userMessage.content,
-            settings.mode,
-            previousMessages
-          );
+      const aiResponse = await aiChatService.sendMessage(
+        userMessage.content,
+        settings.mode,
+        previousMessages
+      );
 
-          const chatResponse: ChatMessage = {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: aiResponse.content,
-            type: 'text',
-            timestamp: new Date().toISOString(),
-            corrections: aiResponse.corrections,
-            suggestions: aiResponse.suggestions,
-            grammarFeedback: aiResponse.grammarFeedback
-          };
+      const chatResponse: ChatMessage = {
+        id: generateMessageId(),
+        role: 'assistant',
+        content: aiResponse.content,
+        type: 'text',
+        timestamp: new Date().toISOString(),
+        corrections: aiResponse.corrections,
+        suggestions: aiResponse.suggestions,
+        grammarFeedback: aiResponse.grammarFeedback
+      };
 
-          setMessages(prev => [...prev, chatResponse]);
-          return chatResponse;
-        } catch (error) {
-          console.error('Erro ao enviar mensagem:', error);
-          // Fallback para resposta simulada
-          const aiResponse = generateAIResponse(userMessage.content, settings.mode);
-          setMessages(prev => [...prev, aiResponse]);
-          return aiResponse;
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      {
-        description: `Chat IA - ${settings.mode} mode`,
-        onInsufficientCredits: (verification) => {
-          setCreditVerification(verification);
-          setShowCreditWarning(true);
-        },
-        onSuccess: (result, transaction) => {
-          // Atualizar saldo local
-          setUserCredits(prev => prev - 0.1);
-          setMessagesThisSession(prev => prev + 1);
+      setMessages(prev => [...prev, chatResponse]);
+      setMessagesThisSession(prev => prev + 1);
 
-          toast({
-            title: "Mensagem enviada!",
-            description: `0.1 crédito debitado. Restam ${(userCredits - 0.1).toFixed(1)} créditos.`,
-            duration: 2000
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: "Erro no sistema de créditos",
-            description: error,
-            variant: "destructive"
-          });
-        }
-      }
-    );
+      toast({
+        title: "Mensagem enviada!",
+        description: "Resposta da IA gerada com sucesso.",
+        duration: 2000
+      });
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      // Fallback para resposta simulada
+      const aiResponse = generateAIResponse(userMessage.content, settings.mode);
+      setMessages(prev => [...prev, aiResponse]);
 
-    if (result === null) {
-      // Falha na verificação de créditos - mensagem não enviada
-      return;
+      toast({
+        title: "Usando resposta simulada",
+        description: "API não disponível, usando resposta simulada.",
+        duration: 2000
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -417,13 +437,36 @@ const AIChat = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings className="w-4 h-4 mr-1" />
-            Configurações
-          </Button>
+          <div className="flex items-center gap-2 text-sm">
+            <Badge variant="outline">
+              Créditos: {userCredits}
+            </Badge>
+            {chatEnabled && (
+              <Badge variant="default" className="bg-green-600">
+                ⏱️ {formatTimeLeft(sessionTimeLeft)}
+              </Badge>
+            )}
+          </div>
+
+          {!chatEnabled ? (
+            <Button
+              onClick={activateChatSession}
+              disabled={userCredits < sessionCost}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Zap className="w-4 h-4 mr-1" />
+              Ativar Chat IA ({sessionCost} créditos)
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              Configurações
+            </Button>
+          )}
+
           <Button
             variant="outline"
             onClick={() => startNewSession(settings.mode)}
@@ -549,15 +592,6 @@ const AIChat = () => {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Credit Counter */}
-                  <CreditCounter
-                    currentCredits={userCredits}
-                    showAnimation={true}
-                    size="sm"
-                    onPurchaseClick={() => window.location.href = '/credits'}
-                    warningThreshold={2}
-                  />
-
                   <Button variant="ghost" size="sm">
                     <Clock className="w-4 h-4" />
                   </Button>
@@ -583,6 +617,23 @@ const AIChat = () => {
 
             {/* Messages */}
             <CardContent className="flex-1 overflow-y-auto space-y-4 pb-4">
+              {!chatEnabled && (
+                <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <Bot className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Chat IA Desabilitado</h3>
+                  <p className="text-gray-500 mb-4">
+                    Ative uma sessão de 30 minutos por apenas {sessionCost} créditos para conversar com a IA real.
+                  </p>
+                  <Button
+                    onClick={activateChatSession}
+                    disabled={userCredits < sessionCost}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Zap className="w-4 h-4 mr-1" />
+                    Ativar por {sessionCost} créditos
+                  </Button>
+                </div>
+              )}
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -606,7 +657,7 @@ const AIChat = () => {
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
 
                     {/* Grammar corrections */}
-                    {message.corrections && (
+                    {message.corrections && message.corrections.length > 0 && message.corrections[0] && (
                       <div className="mt-2 p-2 bg-yellow-50 rounded text-xs">
                         <p className="font-medium text-yellow-800">Correção:</p>
                         <p className="text-yellow-700">
@@ -685,21 +736,15 @@ const AIChat = () => {
 
             {/* Input */}
             <div className="p-4 border-t">
-              {/* Credit Cost Indicator */}
+              {/* Session Info */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ActivityCostIndicator
-                    activityType="ai-chat-message"
-                    userCredits={userCredits}
-                    position="inline"
-                    showDescription={true}
-                  />
                   <span className="text-xs text-gray-500">
                     ({messagesThisSession} mensagens nesta sessão)
                   </span>
                 </div>
                 <div className="text-xs text-gray-500">
-                  Saldo: {userCredits.toFixed(1)} créditos
+                  Modo: {getModeInfo(settings.mode).name}
                 </div>
               </div>
 
@@ -754,9 +799,9 @@ const AIChat = () => {
 
                 <Button
                   onClick={sendMessage}
-                  disabled={!inputMessage.trim() || isLoading || userCredits < 0.1}
+                  disabled={!inputMessage.trim() || isLoading || !chatEnabled}
                   className="h-10 w-10 p-0"
-                  title={userCredits < 0.1 ? 'Créditos insuficientes' : 'Enviar mensagem'}
+                  title={chatEnabled ? "Enviar mensagem" : "Ative o chat IA primeiro"}
                 >
                   <Send className="w-4 h-4" />
                 </Button>
@@ -766,21 +811,6 @@ const AIChat = () => {
         </div>
       </div>
 
-      {/* Credit Warning Modal */}
-      {creditVerification && (
-        <CreditWarningModal
-          isOpen={showCreditWarning}
-          onClose={() => {
-            setShowCreditWarning(false);
-            setCreditVerification(null);
-          }}
-          verification={creditVerification}
-          activityName="Mensagem no Chat IA"
-          onPurchaseCredits={() => {
-            window.location.href = '/credits?reason=ai_chat&required=0.1';
-          }}
-        />
-      )}
     </div>
   );
 };

@@ -1,11 +1,11 @@
 // Serviço para integração com APIs de IA (OpenAI, Anthropic)
 // Escola Inglês Pareto - Chat IA para ensino de inglês
 
-import { ConversationMode } from '@/types/ai-chat';
+import { ConversationMode, GrammarCorrection } from '@/types/ai-chat';
 
 export interface AIResponse {
   content: string;
-  corrections?: string[];
+  corrections?: GrammarCorrection[];
   suggestions?: string[];
   grammarFeedback?: string;
 }
@@ -156,34 +156,35 @@ export class AIChatService {
 
       grammar: 'Você é um especialista em gramática inglesa. Analise as mensagens do aluno, identifique erros gramaticais, explique as regras e forneça exemplos corretos. Seja didático e encorajador. Responda em português para explicações e em inglês para exemplos.',
 
-      business: 'Você é um especialista em inglês para negócios. Ajude o aluno com vocabulário profissional, expressões formais, e-mails corporativos e apresentações. Mantenha um tom profissional mas acessível. Responda em inglês.',
+      vocabulary: 'Você é um especialista em vocabulário inglês. Ajude o aluno a expandir seu vocabulário, explique palavras difíceis, forneça sinônimos e antônimos. Use exemplos práticos e contextos variados. Responda em inglês com explicações claras.',
 
-      exam: 'Você é um preparador para exames de inglês (IELTS, TOEFL, etc.). Ajude o aluno com estratégias de teste, vocabulário acadêmico e estruturas formais. Forneça feedback detalhado sobre fluência e precisão. Responda em inglês.',
+      pronunciation: 'Você é um especialista em pronúncia inglesa. Ajude o aluno com a pronúncia correta de palavras, sons difíceis, ritmo e entonação. Forneça dicas práticas e exemplos fonéticos. Responda em inglês com foco na pronúncia.',
 
-      free: 'Você é um professor de inglês versátil. Adapte-se ao tópico que o aluno quiser conversar, seja educativo e divertido. Corrija erros quando necessário e expanda o vocabulário do aluno. Responda em inglês.'
+      conversation: 'Você é um professor de inglês para conversação. Mantenha diálogos naturais e interessantes sobre diversos tópicos. Seja espontâneo, faça perguntas envolventes e ajude o aluno a expressar suas ideias fluentemente. Responda em inglês.'
     };
 
-    return prompts[mode] || prompts.free;
+    return prompts[mode] || prompts.conversation;
   }
 
   /**
    * Extrai correções do texto da IA
    */
-  private extractCorrections(content: string): string[] {
-    const corrections: string[] = [];
-    // Procura por padrões de correção como "*correction*" ou "should be:"
-    const correctionPatterns = [
-      /\*([^*]+)\*/g,
-      /should be:?\s*([^.!?]+)/gi,
-      /correct form:?\s*([^.!?]+)/gi
-    ];
+  private extractCorrections(content: string): GrammarCorrection[] {
+    const corrections: GrammarCorrection[] = [];
 
-    correctionPatterns.forEach(pattern => {
-      const matches = content.match(pattern);
-      if (matches) {
-        corrections.push(...matches);
-      }
-    });
+    // Procura por padrões de correção mais específicos
+    const correctionPattern = /\*([^*]+)\*\s*→\s*([^.!?]+)/gi;
+    const matches = content.matchAll(correctionPattern);
+
+    for (const match of matches) {
+      corrections.push({
+        original: match[1]?.trim() || '',
+        corrected: match[2]?.trim() || '',
+        explanation: 'Correção sugerida pela IA',
+        rule: 'Melhoria gramatical',
+        examples: []
+      });
+    }
 
     return corrections;
   }
@@ -252,15 +253,15 @@ export class AIChatService {
       case 'grammar':
         return this.generateGrammarResponse(message, hasGrammarError);
 
-      case 'business':
-        return this.generateBusinessResponse(message, lowerMessage);
+      case 'vocabulary':
+        return this.generateVocabularyResponse(message, lowerMessage);
 
-      case 'exam':
-        return this.generateExamResponse(message, lowerMessage);
+      case 'pronunciation':
+        return this.generatePronunciationResponse(message, lowerMessage);
 
-      case 'free':
+      case 'conversation':
       default:
-        return this.generateFreeResponse(message, isQuestion, isPastTense, isFutureTense);
+        return this.generateConversationResponse(message, isQuestion, isPastTense, isFutureTense);
     }
   }
 
@@ -328,9 +329,17 @@ export class AIChatService {
 
   private generateGrammarResponse(message: string, hasErrors: string[]): AIResponse {
     if (hasErrors.length > 0) {
+      const corrections: GrammarCorrection[] = hasErrors.map(error => ({
+        original: message,
+        corrected: message.replace(/\b(is)\b/g, 'was'), // Simple example correction
+        explanation: error,
+        rule: 'Grammar Rule',
+        examples: ['Example 1', 'Example 2']
+      }));
+
       return {
         content: "I can help you improve that sentence! Let me show you the correct form.",
-        corrections: hasErrors,
+        corrections: corrections,
         suggestions: ["Practice this structure with different examples", "Review the grammar rule"],
         grammarFeedback: "Remember: " + hasErrors[0]
       };
@@ -351,61 +360,69 @@ export class AIChatService {
     };
   }
 
-  private generateBusinessResponse(message: string, lowerMessage: string): AIResponse {
-    if (lowerMessage.includes('email') || lowerMessage.includes('write')) {
+  private generateVocabularyResponse(message: string, lowerMessage: string): AIResponse {
+    if (lowerMessage.includes('meaning') || lowerMessage.includes('definition')) {
       return {
-        content: "For professional emails, start with a clear subject line and use formal greetings like 'Dear' or 'Hello'. Be concise and specific.",
-        suggestions: ["Use 'I am writing to...' to state your purpose", "End with 'Best regards' or 'Sincerely'", "Include a clear call to action"],
+        content: "Great question about vocabulary! Let me help you understand that word better with examples and synonyms.",
+        suggestions: ["Ask for more examples", "Learn word origins", "Practice using new words in sentences"],
         corrections: []
       };
     }
 
-    if (lowerMessage.includes('meeting') || lowerMessage.includes('presentation')) {
+    if (lowerMessage.includes('synonym') || lowerMessage.includes('similar')) {
       return {
-        content: "In business meetings, use phrases like 'I'd like to propose...', 'From my perspective...', or 'Let me suggest...' to sound professional.",
-        suggestions: ["Practice transition phrases", "Use data to support your points", "Ask clarifying questions"],
+        content: "Excellent! Learning synonyms helps expand your vocabulary. Here are some alternatives and their subtle differences...",
+        suggestions: ["Practice using synonyms in context", "Learn collocations", "Study word families"],
         corrections: []
       };
     }
 
-    const businessResponses = [
-      "In professional contexts, that would be expressed as: [formal version of your statement]",
-      "Excellent business vocabulary! You could also say it this way to sound more formal...",
-      "Good professional expression. Here's how to make it even more polished...",
-      "Perfect for business communication. Consider adding these formal phrases..."
+    const vocabularyResponses = [
+      "That's a useful word! Let me give you some related vocabulary and example sentences.",
+      "Great vocabulary choice! Here are some synonyms and antonyms you might find helpful...",
+      "I can suggest better words for this context. Let's explore some options...",
+      "Perfect opportunity to expand your vocabulary! Here are some advanced alternatives..."
     ];
 
     return {
-      content: businessResponses[Math.floor(Math.random() * businessResponses.length)],
-      suggestions: ["Use more formal vocabulary", "Practice diplomatic language", "Master professional email phrases"],
+      content: vocabularyResponses[Math.floor(Math.random() * vocabularyResponses.length)],
+      suggestions: ["Learn word families", "Practice with collocations", "Use advanced vocabulary"],
       corrections: []
     };
   }
 
-  private generateExamResponse(message: string, lowerMessage: string): AIResponse {
-    if (lowerMessage.includes('ielts') || lowerMessage.includes('toefl')) {
+  private generatePronunciationResponse(message: string, lowerMessage: string): AIResponse {
+    if (lowerMessage.includes('how to say') || lowerMessage.includes('pronounce')) {
       return {
-        content: "For exam success, remember to fully answer the question, use a range of vocabulary, and structure your response clearly with introduction, body, and conclusion.",
-        suggestions: ["Use transition words like 'Furthermore', 'Moreover', 'In contrast'", "Give specific examples", "Practice time management"],
+        content: "Let me help you with pronunciation! Remember to focus on stress patterns, consonant clusters, and vowel sounds.",
+        suggestions: ["Practice with phonetic symbols", "Record yourself speaking", "Listen to native speakers"],
         corrections: []
       };
     }
 
-    const examResponses = [
-      "Good response! For higher scores, elaborate more on your main points and use advanced vocabulary.",
-      "Strong answer! Try to add more sophisticated linking words and complex sentence structures.",
-      "Well structured! Now focus on using more academic vocabulary and varied sentence patterns.",
-      "Excellent content! For maximum points, include more detailed examples and explanations."
+    if (lowerMessage.includes('stress') || lowerMessage.includes('accent')) {
+      return {
+        content: "Great question about stress and accent! Word stress can change meaning, so it's very important to get it right.",
+        suggestions: ["Practice stress patterns", "Learn about syllable stress", "Use pronunciation dictionaries"],
+        corrections: []
+      };
+    }
+
+    const pronunciationResponses = [
+      "Good effort with pronunciation! Let me help you with the correct sounds and stress patterns.",
+      "I can hear you're working on that sound! Here are some tips to improve your pronunciation...",
+      "Excellent pronunciation practice! Focus on these specific sounds for better clarity...",
+      "Great speaking! Let's work on some challenging sounds and rhythm patterns..."
     ];
 
     return {
-      content: examResponses[Math.floor(Math.random() * examResponses.length)],
-      suggestions: ["Use advanced vocabulary", "Practice complex grammar structures", "Time your responses", "Add more supporting details"],
+      content: pronunciationResponses[Math.floor(Math.random() * pronunciationResponses.length)],
+      suggestions: ["Practice minimal pairs", "Work on connected speech", "Focus on intonation patterns"],
       corrections: []
     };
   }
 
-  private generateFreeResponse(message: string, isQuestion: boolean, isPastTense: boolean, isFutureTense: boolean): AIResponse {
+  private generateConversationResponse(message: string, isQuestion: boolean, isPastTense: boolean, isFutureTense: boolean): AIResponse {
     if (isPastTense) {
       const pastResponses = [
         "That sounds like it was quite an experience! What did you learn from it?",

@@ -4,9 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, UserPlus, Search, Filter, MoreHorizontal, Mail, Calendar, Shield } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { Users, UserPlus, Search, Filter, MoreHorizontal, Mail, Calendar, Shield, Edit, Trash2, UserCheck, UserX, Eye, Save } from 'lucide-react';
 
 interface User {
   id: string;
@@ -17,12 +22,42 @@ interface User {
   createdAt: string;
   lastLogin?: string;
   credits?: number;
+  approvedBy?: string;
+  approvedAt?: string;
+  phone?: string;
+  avatar?: string;
 }
 
 const AdminUsers = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Estados para modais e ações
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Estados do formulário
+  const [formData, setFormData] = useState<Partial<User>>({
+    name: '',
+    email: '',
+    role: 'student',
+    status: 'pending',
+    phone: ''
+  });
+
+  // Inicializar com mock data
+  React.useEffect(() => {
+    setUsers(mockUsers);
+  }, []);
 
   // Dados mockados para demonstração
   const mockUsers: User[] = [
@@ -84,7 +119,206 @@ const AdminUsers = () => {
     }
   ];
 
-  const filteredUsers = mockUsers.filter(user => {
+  // Funções de validação
+  const validateUser = (data: Partial<User>): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+
+    if (!data.name?.trim()) {
+      newErrors.name = 'Nome é obrigatório';
+    } else if (data.name.length < 2) {
+      newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
+    }
+
+    if (!data.email?.trim()) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      newErrors.email = 'Email inválido';
+    }
+
+    return newErrors;
+  };
+
+  // Funções CRUD para Usuários
+  const handleCreateUser = async () => {
+    setIsLoading(true);
+    const validationErrors = validateUser(formData);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setIsLoading(false);
+      return;
+    }
+
+    // Verificar se email já existe
+    const emailExists = users.some(user => user.email === formData.email);
+    if (emailExists) {
+      setErrors({ email: 'Este email já está cadastrado' });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const newUser: User = {
+        id: Date.now().toString(),
+        name: formData.name!,
+        email: formData.email!,
+        role: formData.role!,
+        status: formData.role === 'teacher' ? 'pending' : formData.status!,
+        createdAt: new Date().toISOString().split('T')[0],
+        phone: formData.phone,
+        credits: formData.role === 'student' ? 0 : undefined
+      };
+
+      setUsers(prev => [...prev, newUser]);
+      setCreateModalOpen(false);
+      resetForm();
+
+      toast({
+        title: "Sucesso!",
+        description: `Usuário criado com sucesso.${formData.role === 'teacher' ? ' Aguardando aprovação.' : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+
+    setIsLoading(true);
+    const validationErrors = validateUser(formData);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setUsers(prev => prev.map(user =>
+        user.id === selectedUser.id
+          ? { ...user, ...formData }
+          : user
+      ));
+
+      setEditModalOpen(false);
+      resetForm();
+      toast({
+        title: "Sucesso!",
+        description: "Usuário atualizado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setUsers(prev => prev.filter(user => user.id !== selectedUser.id));
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: "Sucesso!",
+        description: "Usuário excluído com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApproveUser = async (user: User, approved: boolean) => {
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setUsers(prev => prev.map(u =>
+        u.id === user.id
+          ? {
+              ...u,
+              status: approved ? 'active' : 'inactive',
+              approvedBy: approved ? 'Admin Atual' : undefined,
+              approvedAt: approved ? new Date().toISOString() : undefined
+            }
+          : u
+      ));
+
+      toast({
+        title: approved ? "Usuário Aprovado!" : "Usuário Rejeitado",
+        description: `${user.name} foi ${approved ? 'aprovado' : 'rejeitado'} com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: `Erro ao ${approved ? 'aprovar' : 'rejeitar'} usuário.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Funções auxiliares
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      role: 'student',
+      status: 'pending',
+      phone: ''
+    });
+    setErrors({});
+    setSelectedUser(null);
+  };
+
+  const openViewModal = (user: User) => {
+    setSelectedUser(user);
+    setViewModalOpen(true);
+  };
+
+  const openEditModal = (user: User) => {
+    setSelectedUser(user);
+    setFormData(user);
+    setEditModalOpen(true);
+  };
+
+  const openDeleteDialog = (user: User) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setCreateModalOpen(true);
+  };
+
+  const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
@@ -196,7 +430,7 @@ const AdminUsers = () => {
               <Filter className="mr-2 h-5 w-5" />
               Filtros e Busca
             </div>
-            <Button>
+            <Button onClick={openCreateModal}>
               <UserPlus className="mr-2 h-4 w-4" />
               Novo Usuário
             </Button>
@@ -301,9 +535,44 @@ const AdminUsers = () => {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openViewModal(user)}>
+                          <Eye className="mr-2 h-3 w-3" />
+                          Ver Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditModal(user)}>
+                          <Edit className="mr-2 h-3 w-3" />
+                          Editar
+                        </DropdownMenuItem>
+                        {user.status === 'pending' && user.role === 'teacher' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleApproveUser(user, true)}>
+                              <UserCheck className="mr-2 h-3 w-3 text-green-600" />
+                              Aprovar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleApproveUser(user, false)}>
+                              <UserX className="mr-2 h-3 w-3 text-red-600" />
+                              Rejeitar
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => openDeleteDialog(user)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-3 w-3" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -311,6 +580,246 @@ const AdminUsers = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal de Visualização */}
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Usuário</DialogTitle>
+            <DialogDescription>
+              Visualize as informações do usuário.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Nome</Label>
+                <p className="text-sm text-muted-foreground">{selectedUser.name}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Email</Label>
+                <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Role</Label>
+                  <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <div className="mt-1">{getStatusBadge(selectedUser.status)}</div>
+                </div>
+              </div>
+              {selectedUser.phone && (
+                <div>
+                  <Label className="text-sm font-medium">Telefone</Label>
+                  <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-sm font-medium">Cadastrado em</Label>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(selectedUser.createdAt).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+              {selectedUser.lastLogin && (
+                <div>
+                  <Label className="text-sm font-medium">Último Login</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selectedUser.lastLogin).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              )}
+              {selectedUser.credits !== undefined && (
+                <div>
+                  <Label className="text-sm font-medium">Créditos</Label>
+                  <p className="text-sm text-muted-foreground">{selectedUser.credits}</p>
+                </div>
+              )}
+              {selectedUser.approvedBy && (
+                <div>
+                  <Label className="text-sm font-medium">Aprovado por</Label>
+                  <p className="text-sm text-muted-foreground">{selectedUser.approvedBy}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewModalOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Criação/Edição */}
+      <Dialog open={createModalOpen || editModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setCreateModalOpen(false);
+          setEditModalOpen(false);
+          resetForm();
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {createModalOpen ? 'Novo Usuário' : 'Editar Usuário'}
+            </DialogTitle>
+            <DialogDescription>
+              {createModalOpen
+                ? 'Cadastre um novo usuário no sistema.'
+                : 'Edite as informações do usuário.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Nome *</Label>
+              <Input
+                id="name"
+                value={formData.name || ''}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, name: e.target.value }));
+                  if (errors.name) {
+                    setErrors(prev => ({ ...prev, name: '' }));
+                  }
+                }}
+                placeholder="Nome completo"
+                className={errors.name ? 'border-red-500' : ''}
+              />
+              {errors.name && (
+                <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, email: e.target.value }));
+                  if (errors.email) {
+                    setErrors(prev => ({ ...prev, email: '' }));
+                  }
+                }}
+                placeholder="email@exemplo.com"
+                className={errors.email ? 'border-red-500' : ''}
+              />
+              {errors.email && (
+                <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                value={formData.phone || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="role">Função</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as User['role'] }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Aluno</SelectItem>
+                    <SelectItem value="teacher">Professor</SelectItem>
+                    <SelectItem value="master">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as User['status'] }))}
+                  disabled={formData.role === 'teacher'}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+                {formData.role === 'teacher' && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Professores ficam pendentes até aprovação
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setCreateModalOpen(false);
+              setEditModalOpen(false);
+              resetForm();
+            }}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={createModalOpen ? handleCreateUser : handleUpdateUser}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                  {createModalOpen ? 'Criando...' : 'Salvando...'}
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  {createModalOpen ? 'Criar Usuário' : 'Salvar Alterações'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário "{selectedUser?.name}"?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminPageLayout>
   );
 };
