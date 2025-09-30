@@ -196,7 +196,29 @@ const AIChat = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Iniciar nova sessão
+  // Trocar modo de conversa (sem resetar sessão)
+  const changeConversationMode = (newMode: ConversationMode) => {
+    setSettings({ ...settings, mode: newMode });
+
+    // Adicionar mensagem informando mudança de modo
+    const modeChangeMessage: ChatMessage = {
+      id: generateMessageId(),
+      role: 'assistant',
+      content: `🔄 Modo alterado para: ${getModeInfo(newMode).name}\n\n${CHAT_PROMPTS[newMode].welcome}`,
+      type: 'text',
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, modeChangeMessage]);
+
+    toast({
+      title: `Modo alterado: ${getModeInfo(newMode).name}`,
+      description: "Continue conversando no novo modo!",
+      duration: 2000
+    });
+  };
+
+  // Iniciar nova sessão (resetar tudo)
   const startNewSession = useCallback((mode: ConversationMode = 'practice') => {
     const newSession: ChatSession = {
       id: generateSessionId(),
@@ -578,7 +600,8 @@ const AIChat = () => {
                   key={mode.id}
                   variant={settings.mode === mode.id ? "default" : "outline"}
                   className="w-full justify-start"
-                  onClick={() => startNewSession(mode.id)}
+                  onClick={() => chatEnabled ? changeConversationMode(mode.id) : startNewSession(mode.id)}
+                  disabled={!chatEnabled && settings.mode === mode.id}
                 >
                   <span className="mr-2">{mode.icon}</span>
                   {mode.name}

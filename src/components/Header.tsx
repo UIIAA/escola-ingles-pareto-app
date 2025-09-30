@@ -202,7 +202,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
       handleSearch(query);
       // Reset the timeout reference after execution to identify manual vs debounced search
       searchTimeoutRef.current = null;
-    }, 3000); // Wait 3 seconds after user stops typing
+    }, 500); // Wait 500ms after user stops typing
   };
 
   // Enhanced search function with synonym support
