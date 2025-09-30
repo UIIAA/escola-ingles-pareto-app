@@ -14,6 +14,18 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
   BookOpen,
   Play,
   Award,
@@ -32,7 +44,13 @@ import {
   MessageSquare,
   Zap,
   Trophy,
-  Calendar
+  Calendar,
+  Upload,
+  Video,
+  File,
+  X,
+  Link as LinkIcon,
+  Plus
 } from 'lucide-react';
 
 import {
@@ -61,6 +79,17 @@ const Learning = () => {
   const [selectedLevel, setSelectedLevel] = useState<DifficultyLevel | 'all'>('all');
   const [selectedSkill, setSelectedSkill] = useState<SkillType | 'all'>('all');
   const [activeView, setActiveView] = useState<'paths' | 'progress' | 'achievements'>('paths');
+
+  // Estados para upload de conteúdo
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadType, setUploadType] = useState<'file' | 'url'>('file');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoDescription, setVideoDescription] = useState('');
+  const [selectedPath, setSelectedPath] = useState('');
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Mock user progress
   const mockUserProgress: UserProgress = {
@@ -185,6 +214,185 @@ const Learning = () => {
     });
   };
 
+  // Lidar com seleção de arquivo de vídeo
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tipo de arquivo
+      const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Formato inválido",
+          description: "Por favor, selecione um arquivo de vídeo válido (MP4, WebM, OGG, MOV).",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validar tamanho (máximo 500MB)
+      const maxSize = 500 * 1024 * 1024; // 500MB
+      if (file.size > maxSize) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "O arquivo deve ter no máximo 500MB. Para vídeos maiores, use a opção de URL.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setVideoFile(file);
+
+      // Criar preview do vídeo
+      const previewUrl = URL.createObjectURL(file);
+      setVideoPreview(previewUrl);
+
+      toast({
+        title: "Arquivo selecionado",
+        description: `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`,
+      });
+    }
+  };
+
+  // Validar URL de vídeo (YouTube, Vimeo, links diretos)
+  const validateVideoUrl = (url: string): boolean => {
+    if (!url) return false;
+
+    // YouTube URLs
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
+    if (youtubeRegex.test(url)) return true;
+
+    // Vimeo URLs
+    const vimeoRegex = /^(https?:\/\/)?(www\.)?vimeo\.com\/\d+/;
+    if (vimeoRegex.test(url)) return true;
+
+    // Direct video URLs
+    const directVideoRegex = /^https?:\/\/.+\.(mp4|webm|ogg|mov)$/i;
+    if (directVideoRegex.test(url)) return true;
+
+    return false;
+  };
+
+  // Upload de vídeo
+  const handleUploadVideo = async () => {
+    // Validações
+    if (!videoTitle.trim()) {
+      toast({
+        title: "Título obrigatório",
+        description: "Por favor, insira um título para o vídeo.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedPath) {
+      toast({
+        title: "Trilha obrigatória",
+        description: "Por favor, selecione a trilha onde o vídeo será adicionado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (uploadType === 'file' && !videoFile) {
+      toast({
+        title: "Arquivo obrigatório",
+        description: "Por favor, selecione um arquivo de vídeo.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (uploadType === 'url') {
+      if (!videoUrl.trim()) {
+        toast({
+          title: "URL obrigatória",
+          description: "Por favor, insira a URL do vídeo.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!validateVideoUrl(videoUrl)) {
+        toast({
+          title: "URL inválida",
+          description: "Por favor, insira uma URL válida do YouTube, Vimeo ou link direto de vídeo.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Simular upload (em produção, usar Supabase Storage)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      let finalVideoUrl = '';
+
+      if (uploadType === 'file' && videoFile) {
+        // Em produção: Upload para Supabase Storage
+        // const { data, error } = await supabase.storage
+        //   .from('learning-videos')
+        //   .upload(`videos/${Date.now()}-${videoFile.name}`, videoFile);
+        //
+        // if (error) throw error;
+        // finalVideoUrl = data.path;
+
+        // Mock URL para demonstração
+        finalVideoUrl = `https://storage.supabase.co/learning-videos/${Date.now()}-${videoFile.name}`;
+      } else {
+        finalVideoUrl = videoUrl;
+      }
+
+      // Em produção: Salvar no banco de dados
+      // const contentItem = {
+      //   title: videoTitle,
+      //   description: videoDescription,
+      //   type: 'video',
+      //   pathId: selectedPath,
+      //   content: {
+      //     videoUrl: finalVideoUrl,
+      //     duration: 0, // Calcular duração real
+      //   },
+      //   createdAt: new Date().toISOString()
+      // };
+      //
+      // await supabase.from('learning_content').insert(contentItem);
+
+      toast({
+        title: "✅ Vídeo adicionado com sucesso!",
+        description: `"${videoTitle}" foi adicionado à trilha selecionada.`,
+      });
+
+      // Resetar formulário
+      setUploadDialogOpen(false);
+      setVideoFile(null);
+      setVideoUrl('');
+      setVideoTitle('');
+      setVideoDescription('');
+      setSelectedPath('');
+      setVideoPreview(null);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Erro no upload",
+        description: "Não foi possível fazer upload do vídeo. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Limpar preview quando mudar de tipo
+  React.useEffect(() => {
+    if (videoPreview) {
+      return () => URL.revokeObjectURL(videoPreview);
+    }
+  }, [videoPreview]);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -200,6 +408,190 @@ const Learning = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+                <Upload className="w-4 h-4 mr-2" />
+                Adicionar Conteúdo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Video className="w-5 h-5 text-blue-600" />
+                  Adicionar Vídeo à Trilha de Aprendizado
+                </DialogTitle>
+                <DialogDescription>
+                  Faça upload de um vídeo ou adicione um link do YouTube/Vimeo
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                {/* Tipo de Upload */}
+                <Tabs value={uploadType} onValueChange={(v) => setUploadType(v as 'file' | 'url')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="file">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload de Arquivo
+                    </TabsTrigger>
+                    <TabsTrigger value="url">
+                      <LinkIcon className="w-4 h-4 mr-2" />
+                      URL (YouTube/Vimeo)
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="file" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>Arquivo de Vídeo</Label>
+                      <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="video-upload"
+                        />
+                        <label htmlFor="video-upload" className="cursor-pointer">
+                          {videoFile ? (
+                            <div className="space-y-2">
+                              <File className="w-12 h-12 mx-auto text-green-600" />
+                              <p className="font-medium">{videoFile.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+                              </p>
+                              <Button type="button" variant="outline" size="sm" onClick={() => {
+                                setVideoFile(null);
+                                setVideoPreview(null);
+                              }}>
+                                <X className="w-4 h-4 mr-1" />
+                                Remover
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <Upload className="w-12 h-12 mx-auto text-gray-400" />
+                              <p className="font-medium">Clique para selecionar um vídeo</p>
+                              <p className="text-sm text-gray-500">
+                                MP4, WebM, OGG ou MOV (máx. 500MB)
+                              </p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Preview do vídeo */}
+                    {videoPreview && (
+                      <div className="space-y-2">
+                        <Label>Preview</Label>
+                        <video
+                          src={videoPreview}
+                          controls
+                          className="w-full rounded-lg border"
+                          style={{ maxHeight: '300px' }}
+                        />
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="url" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="video-url">URL do Vídeo</Label>
+                      <Input
+                        id="video-url"
+                        placeholder="https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Suporta: YouTube, Vimeo ou links diretos para arquivos de vídeo
+                      </p>
+                    </div>
+
+                    {/* Preview para URLs do YouTube */}
+                    {videoUrl && validateVideoUrl(videoUrl) && videoUrl.includes('youtube') && (
+                      <div className="space-y-2">
+                        <Label>Preview</Label>
+                        <div className="aspect-video rounded-lg border overflow-hidden bg-black">
+                          <iframe
+                            src={videoUrl.replace('watch?v=', 'embed/')}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+
+                {/* Campos comuns */}
+                <div className="space-y-2">
+                  <Label htmlFor="video-title">Título do Vídeo *</Label>
+                  <Input
+                    id="video-title"
+                    placeholder="Ex: Introduction to English Tenses"
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="video-description">Descrição (Opcional)</Label>
+                  <Textarea
+                    id="video-description"
+                    placeholder="Descreva o conteúdo do vídeo e o que os alunos aprenderão..."
+                    value={videoDescription}
+                    onChange={(e) => setVideoDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="path-select">Trilha de Aprendizado *</Label>
+                  <Select value={selectedPath} onValueChange={setSelectedPath}>
+                    <SelectTrigger id="path-select">
+                      <SelectValue placeholder="Selecione a trilha" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LEARNING_PATHS.map(path => (
+                        <SelectItem key={path.id} value={path.id}>
+                          {path.title} ({getLevelLabel(path.level)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setUploadDialogOpen(false)}
+                  disabled={isUploading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleUploadVideo}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Upload className="w-4 h-4 mr-2 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Vídeo
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Button
             variant={activeView === 'paths' ? 'default' : 'outline'}
             onClick={() => setActiveView('paths')}
