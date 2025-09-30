@@ -274,6 +274,118 @@ const Forum = () => {
   // Mock topics state (in a real app, this would come from a backend)
   const [topics, setTopics] = useState<ForumTopic[]>(MOCK_TOPICS);
 
+  // Vote handling functions
+  const handleVoteTopic = (topicId: string, voteType: 'up' | 'down') => {
+    setTopics(prevTopics => prevTopics.map(topic => {
+      if (topic.id === topicId) {
+        const currentVote = topic.votes.userVote;
+        let newUpvotes = topic.votes.upvotes;
+        let newDownvotes = topic.votes.downvotes;
+        let newUserVote: 'up' | 'down' | null = voteType;
+
+        // Remove previous vote if exists
+        if (currentVote === 'up') {
+          newUpvotes--;
+        } else if (currentVote === 'down') {
+          newDownvotes--;
+        }
+
+        // If clicking same vote, remove it (toggle off)
+        if (currentVote === voteType) {
+          newUserVote = null;
+        } else {
+          // Add new vote
+          if (voteType === 'up') {
+            newUpvotes++;
+          } else {
+            newDownvotes++;
+          }
+        }
+
+        return {
+          ...topic,
+          votes: {
+            upvotes: newUpvotes,
+            downvotes: newDownvotes,
+            userVote: newUserVote
+          }
+        };
+      }
+      return topic;
+    }));
+
+    // Update selected topic if it's open
+    if (selectedTopic?.id === topicId) {
+      const updatedTopic = topics.find(t => t.id === topicId);
+      if (updatedTopic) {
+        const currentVote = updatedTopic.votes.userVote;
+        let newUpvotes = updatedTopic.votes.upvotes;
+        let newDownvotes = updatedTopic.votes.downvotes;
+        let newUserVote: 'up' | 'down' | null = voteType;
+
+        if (currentVote === 'up') newUpvotes--;
+        else if (currentVote === 'down') newDownvotes--;
+
+        if (currentVote === voteType) {
+          newUserVote = null;
+        } else {
+          if (voteType === 'up') newUpvotes++;
+          else newDownvotes++;
+        }
+
+        setSelectedTopic({
+          ...updatedTopic,
+          votes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+        });
+      }
+    }
+
+    toast({
+      title: voteType === 'up' ? "👍 Voto positivo" : "👎 Voto negativo",
+      description: `Seu voto foi registrado!`,
+      duration: 2000
+    });
+  };
+
+  const handleVoteReply = (replyId: string, voteType: 'up' | 'down') => {
+    setReplies(prevReplies => {
+      const updated = { ...prevReplies };
+      Object.keys(updated).forEach(topicId => {
+        updated[topicId] = updated[topicId].map(reply => {
+          if (reply.id === replyId) {
+            const currentVote = reply.votes.userVote;
+            let newUpvotes = reply.votes.upvotes;
+            let newDownvotes = reply.votes.downvotes;
+            let newUserVote: 'up' | 'down' | null = voteType;
+
+            if (currentVote === 'up') newUpvotes--;
+            else if (currentVote === 'down') newDownvotes--;
+
+            if (currentVote === voteType) {
+              newUserVote = null;
+            } else {
+              if (voteType === 'up') newUpvotes++;
+              else newDownvotes++;
+            }
+
+            return {
+              ...reply,
+              votes: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+            };
+          }
+          return reply;
+        });
+      });
+      return updated;
+    });
+
+    toast({
+      title: voteType === 'up' ? "👍 Voto positivo" : "👎 Voto negativo",
+      description: `Seu voto na resposta foi registrado!`,
+      duration: 2000
+    });
+  };
+
   // Filter and sort topics
   const filteredTopics = useMemo(() => {
     let topicsList = [...topics];
@@ -522,13 +634,23 @@ const Forum = () => {
                 )}
               </div>
               <div className="flex flex-col items-center gap-1">
-                <Button variant="ghost" size="sm" className="p-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`p-1 ${selectedTopic.votes.userVote === 'up' ? 'text-green-600' : ''}`}
+                  onClick={() => handleVoteTopic(selectedTopic.id, 'up')}
+                >
                   <ArrowUp className="w-4 h-4" />
                 </Button>
                 <span className="font-medium text-sm">
                   {selectedTopic.votes.upvotes - selectedTopic.votes.downvotes}
                 </span>
-                <Button variant="ghost" size="sm" className="p-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`p-1 ${selectedTopic.votes.userVote === 'down' ? 'text-red-600' : ''}`}
+                  onClick={() => handleVoteTopic(selectedTopic.id, 'down')}
+                >
                   <ArrowDown className="w-4 h-4" />
                 </Button>
               </div>
@@ -573,13 +695,23 @@ const Forum = () => {
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <Button variant="ghost" size="sm" className="p-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`p-1 ${reply.votes.userVote === 'up' ? 'text-green-600' : ''}`}
+                      onClick={() => handleVoteReply(reply.id, 'up')}
+                    >
                       <ArrowUp className="w-4 h-4" />
                     </Button>
                     <span className="font-medium text-sm">
                       {reply.votes.upvotes - reply.votes.downvotes}
                     </span>
-                    <Button variant="ghost" size="sm" className="p-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`p-1 ${reply.votes.userVote === 'down' ? 'text-red-600' : ''}`}
+                      onClick={() => handleVoteReply(reply.id, 'down')}
+                    >
                       <ArrowDown className="w-4 h-4" />
                     </Button>
                   </div>
@@ -785,13 +917,29 @@ const Forum = () => {
 
                     {/* Voting */}
                     <div className="flex flex-col items-center gap-1 min-w-[60px]">
-                      <Button variant="ghost" size="sm" className="p-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`p-1 ${topic.votes.userVote === 'up' ? 'text-green-600' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVoteTopic(topic.id, 'up');
+                        }}
+                      >
                         <ArrowUp className="w-4 h-4" />
                       </Button>
                       <span className="font-medium text-sm">
                         {topic.votes.upvotes - topic.votes.downvotes}
                       </span>
-                      <Button variant="ghost" size="sm" className="p-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`p-1 ${topic.votes.userVote === 'down' ? 'text-red-600' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVoteTopic(topic.id, 'down');
+                        }}
+                      >
                         <ArrowDown className="w-4 h-4" />
                       </Button>
                     </div>
