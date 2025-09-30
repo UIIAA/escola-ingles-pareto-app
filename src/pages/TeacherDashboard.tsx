@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Calendar,
   Clock,
@@ -17,12 +18,15 @@ import {
   CheckCircle,
   AlertCircle,
   DollarSign,
-  Award
+  Award,
+  Eye
 } from 'lucide-react';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [studentDetailsOpen, setStudentDetailsOpen] = useState(false);
   const [stats, setStats] = useState({
     totalStudents: 24,
     activeStudents: 18,
@@ -82,6 +86,33 @@ const TeacherDashboard = () => {
       status: "confirmed"
     }
   ];
+
+  // Função para abrir detalhes do aluno
+  const openStudentDetails = (studentName: string) => {
+    // Buscar histórico de aulas do aluno (simulated data)
+    const studentHistory = {
+      name: studentName,
+      level: studentProgress.find(s => s.name === studentName)?.level || "Intermediate",
+      totalLessons: 42,
+      lastLessons: [
+        { date: "2025-09-28", time: "14:00", topic: "Business Conversation", duration: "45 min", status: "completed" },
+        { date: "2025-09-25", time: "10:00", topic: "Grammar - Past Perfect", duration: "60 min", status: "completed" },
+        { date: "2025-09-21", time: "15:30", topic: "IELTS Speaking Practice", duration: "45 min", status: "completed" },
+        { date: "2025-09-18", time: "14:00", topic: "Vocabulary Building", duration: "45 min", status: "completed" },
+        { date: "2025-09-15", time: "10:30", topic: "Pronunciation Workshop", duration: "60 min", status: "completed" }
+      ],
+      upcomingLessons: [
+        { date: "2025-10-01", time: "14:00", topic: "Business Negotiation", duration: "45 min", status: "scheduled" },
+        { date: "2025-10-04", time: "10:00", topic: "Advanced Grammar", duration: "60 min", status: "scheduled" }
+      ],
+      progress: studentProgress.find(s => s.name === studentName)?.progress || 75,
+      attendance: "95%",
+      averageScore: 8.5
+    };
+
+    setSelectedStudent(studentHistory);
+    setStudentDetailsOpen(true);
+  };
 
   const studentProgress = [
     {
@@ -271,7 +302,18 @@ const TeacherDashboard = () => {
             {studentProgress.map((student, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-sm">{student.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">{student.name}</h4>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openStudentDetails(student.name)}
+                      className="h-6 px-2"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Ver Detalhes
+                    </Button>
+                  </div>
                   <Badge variant="outline" className="text-xs">{student.level}</Badge>
                 </div>
                 <Progress value={student.progress} className="h-2" />
@@ -379,6 +421,122 @@ const TeacherDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Detalhes do Aluno */}
+      <Dialog open={studentDetailsOpen} onOpenChange={setStudentDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Aluno: {selectedStudent?.name}</DialogTitle>
+            <DialogDescription>
+              Histórico de aulas e progresso detalhado
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedStudent && (
+            <div className="space-y-6">
+              {/* Estatísticas gerais */}
+              <div className="grid grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-2xl font-bold text-blue-600">{selectedStudent.totalLessons}</p>
+                    <p className="text-xs text-muted-foreground">Total de Aulas</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-2xl font-bold text-green-600">{selectedStudent.progress}%</p>
+                    <p className="text-xs text-muted-foreground">Progresso</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-2xl font-bold text-purple-600">{selectedStudent.attendance}</p>
+                    <p className="text-xs text-muted-foreground">Frequência</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-2xl font-bold text-orange-600">{selectedStudent.averageScore}</p>
+                    <p className="text-xs text-muted-foreground">Nota Média</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Últimas aulas */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Últimas 5 Aulas
+                </h3>
+                <div className="space-y-2">
+                  {selectedStudent.lastLessons.map((lesson: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <div>
+                          <p className="font-medium text-sm">{lesson.topic}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {lesson.date} às {lesson.time} • {lesson.duration}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs bg-green-50">
+                        Concluída
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Próximas aulas */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Próximas Aulas Agendadas
+                </h3>
+                <div className="space-y-2">
+                  {selectedStudent.upcomingLessons.map((lesson: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-blue-50">
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                        <div>
+                          <p className="font-medium text-sm">{lesson.topic}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {lesson.date} às {lesson.time} • {lesson.duration}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700">
+                        Agendada
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Informações adicionais */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Informações do Aluno</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <p><strong>Nível:</strong> {selectedStudent.level}</p>
+                  <p><strong>Progresso:</strong> {selectedStudent.progress}%</p>
+                  <p><strong>Frequência:</strong> {selectedStudent.attendance}</p>
+                  <p><strong>Nota Média:</strong> {selectedStudent.averageScore}/10</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setStudentDetailsOpen(false)}>
+              Fechar
+            </Button>
+            <Button onClick={() => navigate('/teaching')}>
+              Ver Todas as Aulas
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
