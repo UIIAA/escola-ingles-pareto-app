@@ -17,6 +17,7 @@
     "test:all": "npm run test:run && npm run test:e2e"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.0",
     "@mercadopago/sdk-js": "^0.0.3",
     "@mercadopago/sdk-react": "^1.0.6",

@@ -56,18 +56,27 @@ export interface Database {
           phone: string | null;
           timezone: string | null;
           avatar_url: string | null;
+          posts_count: number;
+          reputation_score: number;
+          badges: string[];
         };
         Insert: {
           user_id: string;
           phone?: string | null;
           timezone?: string | null;
           avatar_url?: string | null;
+          posts_count?: number;
+          reputation_score?: number;
+          badges?: string[];
         };
         Update: {
           user_id?: string;
           phone?: string | null;
           timezone?: string | null;
           avatar_url?: string | null;
+          posts_count?: number;
+          reputation_score?: number;
+          badges?: string[];
         };
       };
       lesson_slots: {
@@ -177,6 +186,138 @@ export interface Database {
           credits_purchased?: number;
           payment_method?: string;
           status?: 'pending' | 'completed' | 'failed' | 'refunded';
+          created_at?: string;
+        };
+      };
+      forum_topics: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          category: 'grammar' | 'vocabulary' | 'conversation' | 'culture' | 'homework';
+          status: 'open' | 'closed' | 'pinned' | 'resolved';
+          author_id: string;
+          created_at: string;
+          updated_at: string;
+          views_count: number;
+          replies_count: number;
+          last_reply_at: string | null;
+          last_reply_by: string | null;
+          tags: string[];
+          is_pinned: boolean;
+          is_locked: boolean;
+          is_resolved: boolean;
+          upvotes: number;
+          downvotes: number;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          category: 'grammar' | 'vocabulary' | 'conversation' | 'culture' | 'homework';
+          status?: 'open' | 'closed' | 'pinned' | 'resolved';
+          author_id: string;
+          created_at?: string;
+          updated_at?: string;
+          views_count?: number;
+          replies_count?: number;
+          last_reply_at?: string | null;
+          last_reply_by?: string | null;
+          tags?: string[];
+          is_pinned?: boolean;
+          is_locked?: boolean;
+          is_resolved?: boolean;
+          upvotes?: number;
+          downvotes?: number;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          category?: 'grammar' | 'vocabulary' | 'conversation' | 'culture' | 'homework';
+          status?: 'open' | 'closed' | 'pinned' | 'resolved';
+          author_id?: string;
+          created_at?: string;
+          updated_at?: string;
+          views_count?: number;
+          replies_count?: number;
+          last_reply_at?: string | null;
+          last_reply_by?: string | null;
+          tags?: string[];
+          is_pinned?: boolean;
+          is_locked?: boolean;
+          is_resolved?: boolean;
+          upvotes?: number;
+          downvotes?: number;
+        };
+      };
+      forum_replies: {
+        Row: {
+          id: string;
+          content: string;
+          topic_id: string;
+          author_id: string;
+          parent_reply_id: string | null;
+          created_at: string;
+          updated_at: string;
+          is_edited: boolean;
+          upvotes: number;
+          downvotes: number;
+          is_moderated: boolean;
+          is_best_answer: boolean;
+        };
+        Insert: {
+          id?: string;
+          content: string;
+          topic_id: string;
+          author_id: string;
+          parent_reply_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          is_edited?: boolean;
+          upvotes?: number;
+          downvotes?: number;
+          is_moderated?: boolean;
+          is_best_answer?: boolean;
+        };
+        Update: {
+          id?: string;
+          content?: string;
+          topic_id?: string;
+          author_id?: string;
+          parent_reply_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          is_edited?: boolean;
+          upvotes?: number;
+          downvotes?: number;
+          is_moderated?: boolean;
+          is_best_answer?: boolean;
+        };
+      };
+      forum_votes: {
+        Row: {
+          id: string;
+          user_id: string;
+          topic_id: string | null;
+          reply_id: string | null;
+          vote_type: 'up' | 'down';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          topic_id?: string | null;
+          reply_id?: string | null;
+          vote_type: 'up' | 'down';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          topic_id?: string | null;
+          reply_id?: string | null;
+          vote_type?: 'up' | 'down';
           created_at?: string;
         };
       };

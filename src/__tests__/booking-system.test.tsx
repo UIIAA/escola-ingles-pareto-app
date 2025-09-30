@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 import StudentBooking from '../components/StudentBooking'
-import { AuthContext } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 
 // Mock dependencies
 vi.mock('../services/google-calendar', () => ({
@@ -38,28 +38,9 @@ vi.mock('../hooks/useBookings', () => ({
 
 // Test wrapper with necessary providers
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-  const mockUser = {
-    id: 'test-user-id',
-    email: 'test@example.com',
-    user_metadata: {
-      name: 'Test User',
-      role: 'student'
-    }
-  }
-
-  const mockAuthValue = {
-    user: mockUser,
-    loading: false,
-    signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn()
-  }
-
   return (
     <BrowserRouter>
-      <AuthContext.Provider value={mockAuthValue}>
-        {children}
-      </AuthContext.Provider>
+      <div>{children}</div>
     </BrowserRouter>
   )
 }
@@ -72,9 +53,11 @@ describe('Booking System Component Tests', () => {
   describe('StudentBooking Component', () => {
     it('should render booking form correctly', () => {
       render(
-        <TestWrapper>
-          <StudentBooking />
-        </TestWrapper>
+        <BrowserRouter>
+          <TestWrapper>
+            <StudentBooking />
+          </TestWrapper>
+        </BrowserRouter>
       )
 
       // Check if main booking elements are present

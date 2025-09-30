@@ -11,9 +11,9 @@ vi.mock('@/lib/supabase', () => ({
         data: {
           user: {
             id: 'test-user-id',
-            email: 'test@example.com',
+            email: 'marcos@exemplo.com',
             user_metadata: {
-              full_name: 'Test User',
+              name: 'Marcos Cruz',
               role: 'student',
               avatar_url: 'https://example.com/avatar.jpg'
             },
@@ -44,9 +44,9 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
     user: {
       id: 'test-user-id',
-      email: 'test@example.com',
+      email: 'marcos@exemplo.com',
       user_metadata: {
-        full_name: 'Test User',
+        name: 'Marcos Cruz',
         role: 'student',
         avatar_url: 'https://example.com/avatar.jpg'
       },
@@ -70,10 +70,23 @@ vi.mock('@/contexts/SidebarContext', () => ({
   SidebarProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>
 }));
 
+// Mock responsive hook
+vi.mock('@/hooks/use-responsive', () => ({
+  useResponsive: () => ({
+    width: 1200,
+    deviceType: 'desktop',
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    legacy_isMobile: false
+  })
+}));
+
 // Mock toast hook
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: vi.fn()
+    toast: vi.fn(),
+    toasts: []
   })
 }));
 
@@ -95,4 +108,3 @@ const customRender = (
 // Re-export everything
 export * from '@testing-library/react';
 export { customRender as render };
-export { mockUser, mockAuthContextValue, mockSidebarContextValue };
