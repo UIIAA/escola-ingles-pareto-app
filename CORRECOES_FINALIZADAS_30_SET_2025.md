@@ -98,19 +98,31 @@
 - ✅ Botão "Adicionar Conteúdo" no header da página
 - ⚠️ Nota: Integração com Supabase Storage será feita em próxima sessão
 
+#### 11. ⚠️ Fórum - Preparação para Persistência Supabase
+**Arquivos:** `src/services/forum.ts`, `migrations/001_forum_schema.sql`
+- ✅ ForumService completo com todas funções CRUD
+- ✅ Migration SQL criada (tabelas, triggers, RLS policies)
+- ✅ Script de execução de migration
+- ✅ Documentação completa em `FORUM_SETUP_INSTRUCTIONS.md`
+- ⏳ **Pendente:** Execução manual da migration no Supabase Dashboard
+- ⏳ **Pendente:** Ativação do código real no Forum.tsx
+- ⏳ Nota: Requer acesso ao Supabase SQL Editor para executar migration
+
 ---
 
 ## ⏳ PENDÊNCIAS PARA PRÓXIMA SESSÃO (4 ITENS)
 
 ### **Prioridade ALTA:**
 
-#### 1. 🔄 Forum - Persistência Real no Supabase
-**Local:** `src/pages/Forum.tsx` + `src/services/forum.ts`
-- Integrar ForumService com Supabase real
-- Criar/Atualizar RLS policies para professores
-- Testar criação de topics e replies
-- Garantir votação persiste no banco
-- **Tempo Estimado:** 1.5-2 horas
+#### 1. 🔄 Forum - Executar Migration e Ativar Backend
+**Local:** Supabase Dashboard + `src/pages/Forum.tsx`
+- ⏳ Executar `migrations/001_forum_schema.sql` no Supabase SQL Editor
+- ⏳ Verificar tabelas criadas (forum_topics, forum_replies, forum_votes)
+- ⏳ Substituir mock data por chamadas ForumService
+- ⏳ Testar criação de topics e replies
+- ⏳ Garantir votação persiste no banco
+- 📝 Instruções completas em: `FORUM_SETUP_INSTRUCTIONS.md`
+- **Tempo Estimado:** 30min (migration) + 1h (integração frontend)
 
 #### 2. 🔄 Agendamento - Verificar Funcionalidade
 **Local:** `src/pages/Schedule.tsx` + `src/components/StudentBooking.tsx`
@@ -161,6 +173,8 @@
 4. `🔧 Fix P8 & P9: Forum Voting + Reply Persistence` (4e77258)
 5. `✨ Additional Improvements: Chat Modes + Search` (1dee139)
 6. `🎬 Trilha - Sistema Completo de Upload de Vídeos` (96bdbb5)
+7. `📝 Documentação: Atualização com Upload de Vídeos` (a70fddf)
+8. `🗄️ Fórum - Migration SQL + Instruções de Setup` (pendente)
 
 ---
 
