@@ -69,9 +69,18 @@ const AdminLessons = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<LessonTemplate | null>(null);
   const [templates, setTemplates] = useState<LessonTemplate[]>([]);
   const [scheduledLessons, setScheduledLessons] = useState<ScheduledLesson[]>([]);
+  const [scheduleFormData, setScheduleFormData] = useState({
+    date: '',
+    time: '',
+    teacher: '',
+    student: ''
+  });
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   // Estado para formulário
   const [formData, setFormData] = useState<Partial<LessonTemplate>>({
@@ -241,6 +250,132 @@ const AdminLessons = () => {
       title: "Template copiado",
       description: "Template copiado para edição.",
     });
+  };
+
+  // Função para abrir modal de agendamento
+  const openScheduleModal = (template: LessonTemplate) => {
+    setSelectedTemplate(template);
+    setScheduleFormData({
+      date: '',
+      time: '',
+      teacher: '',
+      student: ''
+    });
+    setAvailabilityError(null);
+    setScheduleModalOpen(true);
+  };
+
+  // Função para verificar disponibilidade no Google Calendar
+  const checkAvailability = async (date: string, time: string): Promise<boolean> => {
+    if (!date || !time) return false;
+
+    setIsCheckingAvailability(true);
+    setAvailabilityError(null);
+
+    try {
+      // Simular chamada ao Google Calendar API
+      // Em produção, isso faria uma chamada real à API do Google Calendar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Simular verificação de conflito (20% de chance de conflito para demonstração)
+      const hasConflict = Math.random() < 0.2;
+
+      if (hasConflict) {
+        setAvailabilityError(`❌ Horário não disponível! Já existe uma aula agendada para ${date} às ${time}.`);
+        return false;
+      }
+
+      // Verificar se é um horário válido (horário comercial)
+      const [hours] = time.split(':').map(Number);
+      if (hours < 8 || hours > 20) {
+        setAvailabilityError('⚠️ Horário fora do horário comercial (8h-20h).');
+        return false;
+      }
+
+      // Verificar se é uma data futura
+      const selectedDate = new Date(`${date}T${time}`);
+      const now = new Date();
+      if (selectedDate < now) {
+        setAvailabilityError('⚠️ Não é possível agendar aulas no passado.');
+        return false;
+      }
+
+      // Horário disponível
+      toast({
+        title: "✅ Horário Disponível!",
+        description: `${date} às ${time} está livre para agendamento.`,
+      });
+      return true;
+    } catch (error) {
+      setAvailabilityError('Erro ao verificar disponibilidade. Tente novamente.');
+      return false;
+    } finally {
+      setIsCheckingAvailability(false);
+    }
+  };
+
+  // Função para agendar aula usando o template
+  const handleScheduleLesson = async () => {
+    if (!selectedTemplate) return;
+
+    const { date, time, teacher, student } = scheduleFormData;
+
+    if (!date || !time || !teacher) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar disponibilidade antes de agendar
+    const isAvailable = await checkAvailability(date, time);
+    if (!isAvailable) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const newScheduledLesson: ScheduledLesson = {
+        id: Date.now().toString(),
+        templateId: selectedTemplate.id,
+        templateTitle: selectedTemplate.title,
+        teacher,
+        student: student || undefined,
+        date,
+        time,
+        duration: selectedTemplate.duration,
+        type: selectedTemplate.type,
+        status: 'scheduled',
+        credits: selectedTemplate.type.includes('individual') ? 10 : 5
+      };
+
+      setScheduledLessons(prev => [...prev, newScheduledLesson]);
+      setScheduleModalOpen(false);
+      setSelectedTemplate(null);
+      toast({
+        title: "Sucesso!",
+        description: `Aula agendada para ${date} às ${time}.`,
+      });
+
+      // Incrementar usage count do template
+      setTemplates(prev => prev.map(t =>
+        t.id === selectedTemplate.id
+          ? { ...t, usageCount: t.usageCount + 1 }
+          : t
+      ));
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao agendar aula.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Funções auxiliares
@@ -567,6 +702,15 @@ const AdminLessons = () => {
                       <TableCell>{getStatusBadge(template.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openScheduleModal(template)}
+                            className="text-blue-600 hover:text-blue-700"
+                            title="Agendar Aula"
+                          >
+                            <Calendar className="h-3 w-3" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => openViewModal(template)}>
                             <Eye className="h-3 w-3" />
                           </Button>
@@ -968,6 +1112,142 @@ const AdminLessons = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Modal de Agendamento de Aula */}
+        <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Agendar Aula com Template</DialogTitle>
+              <DialogDescription>
+                Agende uma aula usando o template: <strong>{selectedTemplate?.title}</strong>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Banner de erro de disponibilidade */}
+              {availabilityError && (
+                <div className="p-3 border-2 border-red-500 bg-red-50 rounded-lg">
+                  <p className="text-sm font-medium text-red-700">{availabilityError}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="schedule-date">Data *</Label>
+                  <Input
+                    id="schedule-date"
+                    type="date"
+                    value={scheduleFormData.date}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => {
+                      setScheduleFormData(prev => ({ ...prev, date: e.target.value }));
+                      setAvailabilityError(null);
+                    }}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="schedule-time">Horário *</Label>
+                  <Input
+                    id="schedule-time"
+                    type="time"
+                    value={scheduleFormData.time}
+                    onChange={(e) => {
+                      setScheduleFormData(prev => ({ ...prev, time: e.target.value }));
+                      setAvailabilityError(null);
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="schedule-teacher">Professor *</Label>
+                <Input
+                  id="schedule-teacher"
+                  type="text"
+                  value={scheduleFormData.teacher}
+                  onChange={(e) => setScheduleFormData(prev => ({ ...prev, teacher: e.target.value }))}
+                  placeholder="Nome do professor"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="schedule-student">Aluno (Opcional)</Label>
+                <Input
+                  id="schedule-student"
+                  type="text"
+                  value={scheduleFormData.student}
+                  onChange={(e) => setScheduleFormData(prev => ({ ...prev, student: e.target.value }))}
+                  placeholder="Nome do aluno (para aulas individuais)"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Informações do Template */}
+              <div className="bg-gray-50 p-3 rounded-lg border space-y-1">
+                <p className="text-sm text-gray-600">
+                  <strong>Duração:</strong> {selectedTemplate?.duration} minutos
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Tipo:</strong> {selectedTemplate?.type}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Tema:</strong> {selectedTemplate?.theme}
+                </p>
+              </div>
+
+              {/* Botão de verificar disponibilidade */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => checkAvailability(scheduleFormData.date, scheduleFormData.time)}
+                disabled={!scheduleFormData.date || !scheduleFormData.time || isCheckingAvailability}
+                className="w-full"
+              >
+                {isCheckingAvailability ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2" />
+                    Verificando disponibilidade...
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Verificar Disponibilidade
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setScheduleModalOpen(false);
+                setAvailabilityError(null);
+              }}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleScheduleLesson}
+                disabled={isLoading || !scheduleFormData.date || !scheduleFormData.time || !scheduleFormData.teacher}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                    Agendando...
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Agendar Aula
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminPageLayout>
   );

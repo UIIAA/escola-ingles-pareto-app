@@ -70,10 +70,31 @@ const AIChat = () => {
   const [sessionCost] = useState(5); // créditos para ativar uma sessão de 30 minutos
   const [sessionDuration] = useState(30 * 60); // 30 minutos em segundos
   const [userCredits, setUserCredits] = useState(10); // Mock - seria carregado do backend
+  const [usingRealAPI, setUsingRealAPI] = useState(false); // Track if using real API or demo mode
+  const [apiConfigured, setApiConfigured] = useState(false); // Check if API is configured
 
   // Hooks
   const { toast } = useToast();
   const userId = 'user-123'; // Mock user ID
+
+  // Check if Gemini API is configured on mount
+  useEffect(() => {
+    const checkAPIConfiguration = () => {
+      const geminiAPIKey = import.meta.env.VITE_GOOGLE_GEMINI_API_KEY;
+      const isConfigured = geminiAPIKey && geminiAPIKey !== 'your_google_gemini_api_key';
+      setApiConfigured(isConfigured);
+
+      if (!isConfigured) {
+        toast({
+          title: "⚠️ Modo Demo Ativo",
+          description: "API Gemini não configurada. Usando respostas simuladas (não consome créditos).",
+          duration: 5000
+        });
+      }
+    };
+
+    checkAPIConfiguration();
+  }, [toast]);
 
   // Configurações
   const [settings, setSettings] = useState<ConversationSettings>({
@@ -131,10 +152,26 @@ const AIChat = () => {
 
   // Ativar sessão de chat
   const activateChatSession = () => {
+    // Se API não configurada, permite usar em modo demo sem cobrar créditos
+    if (!apiConfigured) {
+      setChatEnabled(true);
+      setSessionTimeLeft(sessionDuration);
+      setMessagesThisSession(0);
+      setUsingRealAPI(false);
+
+      toast({
+        title: "🎭 Modo Demo Ativado!",
+        description: "Usando respostas simuladas. Configure a API Gemini para usar IA real.",
+        duration: 5000
+      });
+      return;
+    }
+
+    // Se API configurada, verifica créditos antes de ativar
     if (userCredits < sessionCost) {
       toast({
         title: "Créditos Insuficientes",
-        description: `Você precisa de ${sessionCost} créditos para ativar uma sessão de 30 minutos.`,
+        description: `Você precisa de ${sessionCost} créditos para ativar uma sessão de 30 minutos com IA real.`,
         variant: "destructive"
       });
       return;
@@ -144,10 +181,11 @@ const AIChat = () => {
     setChatEnabled(true);
     setSessionTimeLeft(sessionDuration);
     setMessagesThisSession(0);
+    setUsingRealAPI(true);
 
     toast({
-      title: "Chat IA Ativado!",
-      description: `Sessão de 30 minutos ativada. ${sessionCost} créditos debitados.`,
+      title: "🤖 Chat IA Real Ativado!",
+      description: `Sessão de 30 minutos ativada. ${sessionCost} créditos debitados. Usando Google Gemini API.`,
     });
   };
 
@@ -259,11 +297,24 @@ const AIChat = () => {
       const aiResponse = generateAIResponse(userMessage.content, settings.mode);
       setMessages(prev => [...prev, aiResponse]);
 
-      toast({
-        title: "Usando resposta simulada",
-        description: "API não disponível, usando resposta simulada.",
-        duration: 2000
-      });
+      if (!apiConfigured) {
+        toast({
+          title: "🎭 Modo Demo",
+          description: "Usando resposta simulada (API não configurada).",
+          duration: 2000
+        });
+      } else {
+        toast({
+          title: "⚠️ Erro na API",
+          description: "API indisponível. Usando resposta simulada sem custo.",
+          variant: "destructive",
+          duration: 2000
+        });
+        // Reembolsar crédito se API falhou mas sessão foi paga
+        if (usingRealAPI) {
+          setUserCredits(prev => prev + 0.1); // Pequeno reembolso proporcional
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -451,11 +502,11 @@ const AIChat = () => {
           {!chatEnabled ? (
             <Button
               onClick={activateChatSession}
-              disabled={userCredits < sessionCost}
-              className="bg-blue-600 hover:bg-blue-700"
+              disabled={apiConfigured && userCredits < sessionCost}
+              className={apiConfigured ? "bg-blue-600 hover:bg-blue-700" : "bg-yellow-600 hover:bg-yellow-700"}
             >
               <Zap className="w-4 h-4 mr-1" />
-              Ativar Chat IA ({sessionCost} créditos)
+              {apiConfigured ? `Ativar Chat IA (${sessionCost} créditos)` : 'Ativar Modo Demo (Grátis)'}
             </Button>
           ) : (
             <Button
@@ -476,6 +527,42 @@ const AIChat = () => {
           </Button>
         </div>
       </div>
+
+      {/* Status Banner - API Real vs Demo Mode */}
+      {chatEnabled && (
+        <Card className={`border-2 ${usingRealAPI ? 'border-green-500 bg-green-50' : 'border-yellow-500 bg-yellow-50'}`}>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {usingRealAPI ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-green-700">
+                      🤖 Usando Google Gemini API Real
+                    </span>
+                    <Badge variant="outline" className="text-xs text-green-700 border-green-500">
+                      Créditos ativos
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-yellow-700">
+                      🎭 Modo Demo - Respostas Simuladas
+                    </span>
+                    <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-500">
+                      Sem custo de créditos
+                    </Badge>
+                  </>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                {messagesThisSession} mensagens nesta sessão
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-[600px]">
         {/* Sidebar com modos e configurações */}
