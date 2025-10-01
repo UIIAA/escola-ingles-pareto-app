@@ -147,6 +147,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
     { type: 'topic', title: 'Tourist Destinations Discussion', description: 'Discuss famous places and travel experiences. Turismo, destinos, lugares', path: '/forum' },
     { type: 'topic', title: 'Cultural Differences While Traveling', description: 'Cultural awareness for travelers. Turismo, cultura, diferenças', path: '/forum' },
 
+    // People (Teachers and Students)
+    { type: 'teacher', title: 'Prof. Johnson', description: 'Grammar specialist and IELTS expert teacher', path: '/teaching' },
+    { type: 'teacher', title: 'Prof. Sarah', description: 'Vocabulary and business English expert', path: '/teaching' },
+    { type: 'teacher', title: 'Ana Silva', description: 'Conversation specialist teacher', path: '/teaching' },
+    { type: 'teacher', title: 'Carlos Oliveira', description: 'Grammar and writing expert', path: '/teaching' },
+    { type: 'teacher', title: 'Mariana Costa', description: 'Business English specialist', path: '/teaching' },
+
+    { type: 'student', title: 'Maria Silva', description: 'Intermediate student - Business English', path: '/teaching' },
+    { type: 'student', title: 'João Santos', description: 'Advanced student - IELTS preparation', path: '/teaching' },
+    { type: 'student', title: 'Ana Costa', description: 'Intermediate student - Travel English', path: '/teaching' },
+    { type: 'student', title: 'Pedro Alves', description: 'Beginner student - General English', path: '/teaching' },
+    { type: 'student', title: 'Carla Mendes', description: 'Intermediate student - Conversation practice', path: '/teaching' },
+
     // Features and tools
     { type: 'feature', title: 'Voice Chat', description: 'Practice speaking with AI using voice recognition', path: '/ai-chat' },
     { type: 'feature', title: 'Grammar Correction', description: 'Automatic grammar checking and suggestions', path: '/ai-chat' },

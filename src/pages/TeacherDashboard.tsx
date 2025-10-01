@@ -275,7 +275,12 @@ const TeacherDashboard = () => {
                   ) : (
                     <AlertCircle className="h-5 w-5 text-orange-500" />
                   )}
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openStudentDetails(lesson.student)}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
                     Detalhes
                   </Button>
                 </div>

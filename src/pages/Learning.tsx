@@ -185,12 +185,13 @@ const Learning = () => {
       localStorage.setItem('currentPathTitle', selectedPath.title);
     }
 
-    // Navigate to first lesson or path overview
-    navigate(`/learning/path/${pathId}/lesson/1`);
+    // Scroll to top and show confirmation
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     toast({
-      title: "Learning Path Started!",
-      description: `You've started "${selectedPath?.title}". Redirecting to your first lesson...`,
+      title: "✅ Trilha Iniciada!",
+      description: `Você começou "${selectedPath?.title}". Em breve, as aulas estarão disponíveis aqui.`,
+      duration: 5000,
     });
   };
 
@@ -205,12 +206,13 @@ const Learning = () => {
     // Update last activity timestamp
     localStorage.setItem('lastStudySession', new Date().toISOString());
 
-    // Navigate to current lesson
-    navigate(`/learning/path/${currentPath}/lesson/${currentLesson}`);
+    // Scroll to progress section
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     toast({
-      title: "Continuing Your Studies",
-      description: `Returning to "${pathTitle}" - Lesson ${currentLesson}`,
+      title: "📚 Continuando seus estudos",
+      description: `Trilha: "${pathTitle}" - Lição ${currentLesson}. Em breve, você poderá acessar as aulas aqui.`,
+      duration: 5000,
     });
   };
 
@@ -270,6 +272,23 @@ const Learning = () => {
     if (directVideoRegex.test(url)) return true;
 
     return false;
+  };
+
+  // Converter URL do YouTube para embed
+  const getYouTubeEmbedUrl = (url: string): string => {
+    // https://www.youtube.com/watch?v=VIDEO_ID
+    // https://youtu.be/VIDEO_ID
+    // Converter para: https://www.youtube.com/embed/VIDEO_ID
+
+    let videoId = '';
+
+    if (url.includes('youtube.com/watch?v=')) {
+      videoId = url.split('watch?v=')[1].split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    }
+
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
   // Upload de vídeo
@@ -509,17 +528,31 @@ const Learning = () => {
                     </div>
 
                     {/* Preview para URLs do YouTube */}
-                    {videoUrl && validateVideoUrl(videoUrl) && videoUrl.includes('youtube') && (
+                    {videoUrl && validateVideoUrl(videoUrl) && (videoUrl.includes('youtube') || videoUrl.includes('youtu.be')) && (
                       <div className="space-y-2">
-                        <Label>Preview</Label>
+                        <Label>Preview do YouTube</Label>
                         <div className="aspect-video rounded-lg border overflow-hidden bg-black">
                           <iframe
-                            src={videoUrl.replace('watch?v=', 'embed/')}
+                            src={getYouTubeEmbedUrl(videoUrl)}
                             className="w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
+                            title="YouTube video preview"
                           />
                         </div>
+                      </div>
+                    )}
+
+                    {/* Preview para links diretos */}
+                    {videoUrl && validateVideoUrl(videoUrl) && !videoUrl.includes('youtube') && !videoUrl.includes('youtu.be') && !videoUrl.includes('vimeo') && (
+                      <div className="space-y-2">
+                        <Label>Preview do Vídeo</Label>
+                        <video
+                          src={videoUrl}
+                          controls
+                          className="w-full rounded-lg border"
+                          style={{ maxHeight: '300px' }}
+                        />
                       </div>
                     )}
                   </TabsContent>
