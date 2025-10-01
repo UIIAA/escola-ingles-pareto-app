@@ -27,6 +27,7 @@ const TeacherDashboard = () => {
   const { user } = useAuth();
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [studentDetailsOpen, setStudentDetailsOpen] = useState(false);
+  const [allStudentsModalOpen, setAllStudentsModalOpen] = useState(false);
   const [stats, setStats] = useState({
     totalStudents: 24,
     activeStudents: 18,
@@ -327,8 +328,9 @@ const TeacherDashboard = () => {
             <Button
               className="w-full mt-4"
               variant="outline"
-              onClick={() => navigate('/teaching')}
+              onClick={() => setAllStudentsModalOpen(true)}
             >
+              <Users className="h-4 w-4 mr-2" />
               Ver todos os alunos
             </Button>
           </CardContent>
@@ -421,6 +423,55 @@ const TeacherDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de todos os alunos */}
+      <Dialog open={allStudentsModalOpen} onOpenChange={setAllStudentsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Todos os Alunos ({studentProgress.length})</DialogTitle>
+            <DialogDescription>
+              Lista completa de alunos e seus progressos
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {studentProgress.map((student, index) => (
+              <Card key={index} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{student.name}</h3>
+                      <Badge variant="outline" className="mt-1 text-xs">{student.level}</Badge>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Progresso:</span>
+                          <span className="font-medium">{student.progress}%</span>
+                        </div>
+                        <Progress value={student.progress} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Próxima aula: {student.nextLesson}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => {
+                      setAllStudentsModalOpen(false);
+                      openStudentDetails(student.name);
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalhes Completos
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de Detalhes do Aluno */}
       <Dialog open={studentDetailsOpen} onOpenChange={setStudentDetailsOpen}>

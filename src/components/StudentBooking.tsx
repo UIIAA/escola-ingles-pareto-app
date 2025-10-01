@@ -88,7 +88,13 @@ const StudentBooking = () => {
 
   // Dados simulados para dias do calendário
   const currentDate = new Date();
+  const startOfCurrentWeek = startOfWeek(currentDate, { weekStartsOn: 0 }); // Domingo = 0
   const days = Array.from({ length: 14 }, (_, i) => addDays(currentDate, i));
+
+  // Calcular células vazias no início para alinhar com dia da semana
+  const firstDayOfWeek = startOfCurrentWeek;
+  const daysFromStart = Math.floor((currentDate.getTime() - firstDayOfWeek.getTime()) / (1000 * 60 * 60 * 24));
+  const emptyCellsCount = daysFromStart % 7;
 
   const getTeacherById = (id: string) => {
     return teachers.find(teacher => teacher.id === id);
@@ -123,6 +129,10 @@ const StudentBooking = () => {
             <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
               {day}
             </div>
+          ))}
+          {/* Células vazias para alinhar com dia da semana correto */}
+          {Array.from({ length: emptyCellsCount }).map((_, i) => (
+            <div key={`empty-${i}`} className="h-16" />
           ))}
           {days.map((day) => (
             <Button
