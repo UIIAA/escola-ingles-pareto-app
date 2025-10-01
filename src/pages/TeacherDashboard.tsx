@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TeacherScheduling from '@/components/TeacherScheduling';
 import {
   Calendar,
   Clock,
@@ -19,7 +20,8 @@ import {
   AlertCircle,
   DollarSign,
   Award,
-  Eye
+  Eye,
+  Plus
 } from 'lucide-react';
 
 const TeacherDashboard = () => {
@@ -28,6 +30,7 @@ const TeacherDashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [studentDetailsOpen, setStudentDetailsOpen] = useState(false);
   const [allStudentsModalOpen, setAllStudentsModalOpen] = useState(false);
+  const [schedulingOpen, setSchedulingOpen] = useState(false);
   const [stats, setStats] = useState({
     totalStudents: 24,
     activeStudents: 18,
@@ -193,7 +196,11 @@ const TeacherDashboard = () => {
           <Badge variant="secondary" className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
             ⭐ {stats.rating}/5.0
           </Badge>
-          <Button onClick={() => navigate('/teaching')} className="bg-gradient-to-r from-green-500 to-emerald-500">
+          <Button onClick={() => setSchedulingOpen(true)} className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600">
+            <Plus className="h-4 w-4 mr-2" />
+            Agendar Nova Aula
+          </Button>
+          <Button onClick={() => navigate('/teaching')} variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
             <Calendar className="h-4 w-4 mr-2" />
             Gerenciar Aulas
           </Button>
@@ -593,6 +600,12 @@ const TeacherDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Agendamento */}
+      <TeacherScheduling
+        open={schedulingOpen}
+        onOpenChange={setSchedulingOpen}
+      />
     </div>
   );
 };
