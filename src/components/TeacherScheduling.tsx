@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, User, CheckCircle, Loader2, Plus, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Calendar, Clock, User, CheckCircle, Loader2, Plus, X, Users, Globe } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { googleCalendarService } from "@/services/google-calendar";
@@ -20,7 +22,9 @@ interface TeacherSchedulingProps {
 
 const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
   const { toast } = useToast();
-  const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [isOpenClass, setIsOpenClass] = useState(false);
+  const [maxStudents, setMaxStudents] = useState<string>("6");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [lessonType, setLessonType] = useState<string>("");
@@ -29,6 +33,7 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
   const [duration, setDuration] = useState<string>("45");
   const [isCreating, setIsCreating] = useState(false);
   const [calendarInitialized, setCalendarInitialized] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Lista de alunos (pode vir do Supabase futuramente)
   const students = [
@@ -65,9 +70,21 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
       try {
         const initialized = await googleCalendarService.initialize();
         setCalendarInitialized(initialized);
+
+        if (initialized) {
+          // Tenta autenticar
+          const authenticated = await googleCalendarService.authenticate();
+          setIsAuthenticated(authenticated);
+
+          if (authenticated) {
+            // Garante que o calendário "Aulas Inglês Pareto" existe
+            await googleCalendarService.ensureParetoCalendarExists();
+          }
+        }
       } catch (error) {
         console.error('Erro ao inicializar Google Calendar:', error);
         setCalendarInitialized(false);
+        setIsAuthenticated(false);
       }
     };
 
@@ -75,6 +92,17 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
       initCalendar();
     }
   }, [open]);
+
+  // Função para toggle de seleção de aluno
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
 
   // Gera os próximos 14 dias para seleção
   const generateAvailableDates = () => {
@@ -94,10 +122,10 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
 
   const handleCreateLesson = async () => {
     // Validações
-    if (!selectedStudent) {
+    if (!isOpenClass && selectedStudents.length === 0) {
       toast({
-        title: "⚠️ Selecione um aluno",
-        description: "Escolha o aluno para agendar a aula.",
+        title: "⚠️ Selecione pelo menos um aluno",
+        description: "Escolha um ou mais alunos para a aula, ou marque como 'Aula Aberta'.",
         variant: "destructive",
       });
       return;
@@ -133,12 +161,17 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
     setIsCreating(true);
 
     try {
-      const student = students.find(s => s.id === selectedStudent);
       const lessonTypeData = lessonTypes.find(lt => lt.value === lessonType);
-
-      if (!student || !lessonTypeData) {
-        throw new Error("Dados inválidos");
+      if (!lessonTypeData) {
+        throw new Error("Tipo de aula inválido");
       }
+
+      // Preparar lista de participantes
+      const selectedStudentsList = students.filter(s => selectedStudents.includes(s.id));
+      const attendees = selectedStudentsList.map(s => ({
+        email: s.email,
+        displayName: s.name
+      }));
 
       // Criar evento no Google Calendar
       const [hours, minutes] = selectedTime.split(':');
@@ -148,12 +181,23 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(startDateTime.getMinutes() + parseInt(duration));
 
+      // Montar título e descrição
+      let eventTitle = `Aula de ${lessonTypeData.label}`;
+      if (isOpenClass) {
+        eventTitle += ` - Aula Aberta (até ${maxStudents} alunos)`;
+      } else if (selectedStudentsList.length === 1) {
+        eventTitle += ` - ${selectedStudentsList[0].name}`;
+      } else {
+        eventTitle += ` - Grupo (${selectedStudentsList.length} alunos)`;
+      }
+
       const event = {
-        summary: `Aula de ${lessonTypeData.label} - ${student.name}`,
+        summary: eventTitle,
         description: `
 Tipo: ${lessonTypeData.label}
 Tópico: ${lessonTopic || 'A definir'}
-Nível: ${student.level}
+${isOpenClass ? `🌐 Aula Aberta - Máximo ${maxStudents} alunos\n` : ''}
+${selectedStudentsList.length > 0 ? `Alunos inscritos: ${selectedStudentsList.map(s => s.name).join(', ')}\n` : ''}
 
 ${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
 
@@ -161,28 +205,40 @@ ${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
         `.trim(),
         start: startDateTime,
         end: endDateTime,
-        attendees: [
-          { email: student.email, displayName: student.name }
-        ],
+        attendees: attendees,
         lessonType: lessonType,
       };
 
       // Tentar criar no Google Calendar
       let calendarSuccess = false;
-      if (calendarInitialized) {
+      let calendarError = null;
+
+      if (calendarInitialized && isAuthenticated) {
         try {
+          console.log('🔄 Criando evento no Google Calendar...', event);
           await googleCalendarService.createEvent(event);
           calendarSuccess = true;
+          console.log('✅ Evento criado com sucesso no Google Calendar!');
         } catch (calError) {
-          console.error('Erro ao criar evento no Google Calendar:', calError);
+          console.error('❌ Erro ao criar evento no Google Calendar:', calError);
+          calendarError = calError;
         }
+      } else {
+        console.warn('⚠️ Google Calendar não autenticado. Evento não será criado.');
       }
 
-      // Sucesso
+      // Mensagem de sucesso
+      const participantInfo = isOpenClass
+        ? `Aula Aberta (até ${maxStudents} alunos)`
+        : selectedStudentsList.length === 1
+        ? selectedStudentsList[0].name
+        : `${selectedStudentsList.length} alunos`;
+
       toast({
-        title: "✅ Aula Agendada!",
-        description: `Aula de ${lessonTypeData.label} com ${student.name} agendada para ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}.${calendarSuccess ? ' Evento criado no Google Calendar.' : ''}`,
-        duration: 5000,
+        title: calendarSuccess ? "✅ Aula Agendada no Google Calendar!" : "⚠️ Aula Criada (sem sincronização)",
+        description: `Aula de ${lessonTypeData.label} com ${participantInfo} agendada para ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}.${calendarSuccess ? ' ✓ Sincronizado com Google Calendar' : ' ⚠️ Google Calendar não conectado'}`,
+        duration: 7000,
+        variant: calendarSuccess ? "default" : "destructive",
       });
 
       // Limpar formulário e fechar
@@ -202,7 +258,9 @@ ${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
   };
 
   const resetForm = () => {
-    setSelectedStudent("");
+    setSelectedStudents([]);
+    setIsOpenClass(false);
+    setMaxStudents("6");
     setSelectedDate(null);
     setSelectedTime("");
     setLessonType("");
@@ -225,24 +283,91 @@ ${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Seleção de Aluno */}
+          {/* Status do Google Calendar */}
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+              <CheckCircle className="h-4 w-4" />
+              <span>✅ Conectado ao Google Calendar - Eventos serão criados automaticamente</span>
+            </div>
+          ) : calendarInitialized ? (
+            <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-3 rounded-lg">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Aguardando autenticação Google Calendar...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+              <X className="h-4 w-4" />
+              <span>⚠️ Google Calendar não configurado - Veja GOOGLE_CALENDAR_SETUP.md</span>
+            </div>
+          )}
+
+          {/* Aula Aberta Switch */}
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/50">
+            <div className="flex items-center gap-3">
+              <Globe className="h-5 w-5 text-blue-600" />
+              <div>
+                <Label htmlFor="openClass" className="font-semibold">Aula Aberta</Label>
+                <p className="text-xs text-muted-foreground">Permitir que outros alunos participem</p>
+              </div>
+            </div>
+            <Switch
+              id="openClass"
+              checked={isOpenClass}
+              onCheckedChange={setIsOpenClass}
+            />
+          </div>
+
+          {/* Limite de alunos (se aula aberta) */}
+          {isOpenClass && (
+            <div className="space-y-2">
+              <Label htmlFor="maxStudents">Máximo de Alunos</Label>
+              <Select value={maxStudents} onValueChange={setMaxStudents}>
+                <SelectTrigger id="maxStudents">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 alunos</SelectItem>
+                  <SelectItem value="6">6 alunos</SelectItem>
+                  <SelectItem value="8">8 alunos</SelectItem>
+                  <SelectItem value="10">10 alunos</SelectItem>
+                  <SelectItem value="12">12 alunos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Seleção Múltipla de Alunos */}
           <div className="space-y-2">
-            <Label htmlFor="student">Aluno *</Label>
-            <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-              <SelectTrigger id="student">
-                <SelectValue placeholder="Selecione o aluno" />
-              </SelectTrigger>
-              <SelectContent>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{student.name}</span>
-                      <Badge variant="outline" className="ml-2">{student.level}</Badge>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <Label>Alunos {!isOpenClass && '*'}</Label>
+              {selectedStudents.length > 0 && (
+                <Badge variant="secondary">{selectedStudents.length} selecionado(s)</Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
+              {students.map((student) => {
+                const isSelected = selectedStudents.includes(student.id);
+                return (
+                  <div
+                    key={student.id}
+                    className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
+                      isSelected ? 'bg-primary/10 border-primary' : 'hover:bg-muted'
+                    }`}
+                    onClick={() => toggleStudentSelection(student.id)}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleStudentSelection(student.id)}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{student.name}</p>
+                      <Badge variant="outline" className="text-xs">{student.level}</Badge>
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Calendário de Datas */}
@@ -356,25 +481,42 @@ ${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
             />
           </div>
 
-          {/* Status do Google Calendar */}
-          {calendarInitialized && (
-            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-lg">
-              <CheckCircle className="h-4 w-4" />
-              <span>Conectado ao Google Calendar - O evento será criado automaticamente</span>
-            </div>
-          )}
-
           {/* Resumo */}
-          {selectedStudent && selectedDate && selectedTime && lessonType && (
+          {((selectedStudents.length > 0 || isOpenClass) && selectedDate && selectedTime && lessonType) && (
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
-                <CardTitle className="text-sm">Resumo do Agendamento</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  📋 Resumo do Agendamento
+                  {isOpenClass && <Badge variant="secondary" className="bg-blue-500 text-white">Aula Aberta</Badge>}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="font-medium">Aluno:</span>
-                  <span>{students.find(s => s.id === selectedStudent)?.name}</span>
+                <div className="flex items-start gap-2">
+                  <Users className="h-4 w-4 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-medium">Participantes:</span>
+                    {isOpenClass ? (
+                      <div className="mt-1">
+                        <Badge variant="outline" className="bg-blue-50">
+                          🌐 Aula Aberta (até {maxStudents} alunos)
+                        </Badge>
+                        {selectedStudents.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Inscritos: {students.filter(s => selectedStudents.includes(s.id)).map(s => s.name).join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    ) : selectedStudents.length === 1 ? (
+                      <span className="ml-1">{students.find(s => s.id === selectedStudents[0])?.name}</span>
+                    ) : (
+                      <div className="mt-1">
+                        <Badge variant="outline">Grupo de {selectedStudents.length} alunos</Badge>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {students.filter(s => selectedStudents.includes(s.id)).map(s => s.name).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -413,7 +555,7 @@ ${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
           </Button>
           <Button
             onClick={handleCreateLesson}
-            disabled={isCreating || !selectedStudent || !selectedDate || !selectedTime || !lessonType}
+            disabled={isCreating || (!isOpenClass && selectedStudents.length === 0) || !selectedDate || !selectedTime || !lessonType}
           >
             {isCreating ? (
               <>
