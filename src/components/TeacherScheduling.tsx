@@ -14,6 +14,7 @@ import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { googleCalendarService } from "@/services/google-calendar";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TeacherSchedulingProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface TeacherSchedulingProps {
 
 const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isOpenClass, setIsOpenClass] = useState(false);
   const [maxStudents, setMaxStudents] = useState<string>("6");
@@ -168,10 +170,25 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
 
       // Preparar lista de participantes
       const selectedStudentsList = students.filter(s => selectedStudents.includes(s.id));
-      const attendees = selectedStudentsList.map(s => ({
-        email: s.email,
-        displayName: s.name
-      }));
+
+      // Adicionar professor como participante (para aparecer no calendário dele)
+      const teacherEmail = user?.email || '';
+      const teacherName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Professor';
+
+      const attendees = [
+        // Professor sempre é incluído
+        {
+          email: teacherEmail,
+          displayName: teacherName,
+          organizer: true,
+          responseStatus: 'accepted' as const
+        },
+        // Alunos selecionados
+        ...selectedStudentsList.map(s => ({
+          email: s.email,
+          displayName: s.name
+        }))
+      ];
 
       // Criar evento no Google Calendar
       const [hours, minutes] = selectedTime.split(':');
@@ -194,13 +211,13 @@ const TeacherScheduling = ({ open, onOpenChange }: TeacherSchedulingProps) => {
       const event = {
         summary: eventTitle,
         description: `
-Tipo: ${lessonTypeData.label}
-Tópico: ${lessonTopic || 'A definir'}
+👨‍🏫 Professor: ${teacherName}
+📚 Tipo: ${lessonTypeData.label}
+📖 Tópico: ${lessonTopic || 'A definir'}
 ${isOpenClass ? `🌐 Aula Aberta - Máximo ${maxStudents} alunos\n` : ''}
-${selectedStudentsList.length > 0 ? `Alunos inscritos: ${selectedStudentsList.map(s => s.name).join(', ')}\n` : ''}
+${selectedStudentsList.length > 0 ? `👥 Alunos inscritos: ${selectedStudentsList.map(s => s.name).join(', ')}\n` : ''}
 
-${lessonNotes ? `Observações:\n${lessonNotes}` : ''}
-
+${lessonNotes ? `📝 Observações:\n${lessonNotes}\n` : ''}
 🎓 Escola Inglês Pareto
         `.trim(),
         start: startDateTime,
