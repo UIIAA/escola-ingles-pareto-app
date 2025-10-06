@@ -20,7 +20,6 @@ import TeacherLessons from "./pages/TeacherLessons";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import ClassCatalog from "./pages/ClassCatalog";
 import Forum from "./pages/Forum";
 import AIChat from "./pages/AIChat";
 import Learning from "./pages/Learning";
@@ -30,6 +29,10 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSettings from "./pages/AdminSettings";
 import AdminTeachers from "./pages/AdminTeachers";
 import AdminLessons from "./pages/AdminLessons";
+import AdminPayments from "./pages/AdminPayments";
+import AdminReports from "./pages/AdminReports";
+import PaymentHistory from "./pages/PaymentHistory";
+import TeacherStudents from "./pages/TeacherStudents";
 
 const queryClient = new QueryClient();
 
@@ -56,11 +59,6 @@ const App = () => {
                   <Layout><Dashboard /></Layout>
                 </ProtectedRoute>
               } />
-              <Route path="/catalog" element={
-                <ProtectedRoute requiredRole="teacher">
-                  <Layout><ClassCatalog /></Layout>
-                </ProtectedRoute>
-              } />
               <Route path="/schedule" element={
                 <ProtectedRoute>
                   <Layout><Schedule /></Layout>
@@ -77,33 +75,43 @@ const App = () => {
                 </ProtectedRoute>
               } />
               <Route path="/ai-chat" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="student">
                   <Layout><AIChat /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/credits" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="student">
                   <Layout><Credits /></Layout>
                 </ProtectedRoute>
               } />
+              <Route path="/payments/history" element={
+                <ProtectedRoute requiredRole="student">
+                  <Layout><PaymentHistory /></Layout>
+                </ProtectedRoute>
+              } />
               <Route path="/checkout" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="student">
                   <Layout><Checkout /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/payment/success" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="student">
                   <Layout><PaymentSuccess /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/payment/failure" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="student">
                   <Layout><PaymentFailure /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/teaching" element={
                 <ProtectedRoute requiredRole="teacher">
                   <Layout><TeacherLessons /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/teaching/students" element={
+                <ProtectedRoute requiredRole="teacher">
+                  <Layout><TeacherStudents /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
@@ -139,6 +147,16 @@ const App = () => {
               <Route path="/admin/lessons" element={
                 <ProtectedRoute requiredRole="master">
                   <Layout><AdminLessons /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/payments" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminPayments /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <ProtectedRoute requiredRole="master">
+                  <Layout><AdminReports /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

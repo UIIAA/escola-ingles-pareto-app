@@ -110,7 +110,7 @@ const StudentDashboard = () => {
           <Badge variant="secondary" className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
             {userData.level}
           </Badge>
-          <Button onClick={() => navigate('/catalog')} className="bg-gradient-to-r from-blue-500 to-cyan-500">
+          <Button onClick={() => navigate('/schedule')} className="bg-gradient-to-r from-blue-500 to-cyan-500">
             <Calendar className="h-4 w-4 mr-2" />
             Agendar Aula
           </Button>

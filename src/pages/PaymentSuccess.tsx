@@ -60,7 +60,7 @@ const PaymentSuccess = () => {
     {
       title: 'Agende sua primeira aula',
       description: 'Use seus créditos para agendar aulas com nossos professores',
-      action: () => navigate('/catalog'),
+      action: () => navigate('/schedule'),
       icon: Calendar,
       color: 'bg-blue-500'
     },
@@ -243,7 +243,7 @@ const PaymentSuccess = () => {
       {/* Botões de ação */}
       <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
         <Button
-          onClick={() => navigate('/catalog')}
+          onClick={() => navigate('/schedule')}
           className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
         >
           <Calendar className="h-4 w-4 mr-2" />

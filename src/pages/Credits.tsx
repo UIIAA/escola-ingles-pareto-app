@@ -241,10 +241,20 @@ const Credits = () => {
 
       {/* Transaction History */}
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
-          <History className="w-6 h-6 mr-2" />
-          Histórico de Transações
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
+            <History className="w-6 h-6 mr-2" />
+            Histórico de Transações
+          </h2>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/payments/history')}
+            className="flex items-center gap-2"
+          >
+            <History className="w-4 h-4" />
+            Ver Histórico Completo
+          </Button>
+        </div>
 
         {transactions.length > 0 ? (
           <Card>

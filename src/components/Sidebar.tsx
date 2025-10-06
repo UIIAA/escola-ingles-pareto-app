@@ -42,12 +42,11 @@ const Sidebar: React.FC = () => {
 
   const menuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', description: 'Visão geral' },
-    { icon: BookOpen, label: 'Catálogo de Aulas', path: '/catalog', description: 'Explorar aulas disponíveis', requiredRoles: ['teacher', 'master'] },
     { icon: Calendar, label: 'Agendamento', path: '/schedule', description: 'Agendar aulas' },
     { icon: Target, label: 'Aprendizado', path: '/learning', description: 'Trilhas e progresso' },
     { icon: MessageSquare, label: 'Fórum', path: '/forum', description: 'Discussões e dúvidas' },
-    { icon: Bot, label: 'Chat IA', path: '/ai-chat', description: 'Prática com IA' },
-    { icon: CreditCard, label: 'Créditos', path: '/credits', description: 'Gerenciar créditos' },
+    { icon: Bot, label: 'Chat IA', path: '/ai-chat', description: 'Prática com IA', requiredRoles: ['student'] },
+    { icon: CreditCard, label: 'Créditos', path: '/credits', description: 'Gerenciar créditos', requiredRoles: ['student'] },
     { icon: GraduationCap, label: 'Ensino', path: '/teaching', description: 'Área do professor', requiredRoles: ['teacher', 'master'] },
     { icon: User, label: 'Perfil', path: '/profile', description: 'Meu perfil' },
     { icon: Settings, label: 'Admin', path: '/admin', description: 'Administração', requiredRoles: ['master'] },

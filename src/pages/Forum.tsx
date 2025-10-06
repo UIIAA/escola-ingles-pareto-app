@@ -33,7 +33,10 @@ import {
   CheckCircle,
   ArrowUp,
   ArrowDown,
-  MessageCircle
+  MessageCircle,
+  Lock,
+  Unlock,
+  PinOff
 } from 'lucide-react';
 
 import {
@@ -273,6 +276,52 @@ const Forum = () => {
 
   // Mock topics state (in a real app, this would come from a backend)
   const [topics, setTopics] = useState<ForumTopic[]>(MOCK_TOPICS);
+
+  // Check if user is a moderator (teacher or master)
+  const isModerator = user?.user_metadata?.role === 'teacher' || user?.user_metadata?.role === 'master';
+
+  // Moderation functions
+  const handleTogglePin = (topicId: string) => {
+    setTopics(prevTopics => prevTopics.map(topic => {
+      if (topic.id === topicId) {
+        const newPinnedState = !topic.isPinned;
+        toast({
+          title: newPinnedState ? "📌 Tópico Fixado" : "📍 Tópico Desfixado",
+          description: newPinnedState
+            ? "Este tópico agora aparecerá no topo da lista."
+            : "Este tópico não está mais fixado.",
+        });
+        return { ...topic, isPinned: newPinnedState };
+      }
+      return topic;
+    }));
+
+    // Update selected topic if viewing
+    if (selectedTopic?.id === topicId) {
+      setSelectedTopic(prev => prev ? { ...prev, isPinned: !prev.isPinned } : null);
+    }
+  };
+
+  const handleToggleLock = (topicId: string) => {
+    setTopics(prevTopics => prevTopics.map(topic => {
+      if (topic.id === topicId) {
+        const newLockedState = !topic.isLocked;
+        toast({
+          title: newLockedState ? "🔒 Tópico Bloqueado" : "🔓 Tópico Desbloqueado",
+          description: newLockedState
+            ? "Novas respostas estão bloqueadas neste tópico."
+            : "Novas respostas foram liberadas.",
+        });
+        return { ...topic, isLocked: newLockedState };
+      }
+      return topic;
+    }));
+
+    // Update selected topic if viewing
+    if (selectedTopic?.id === topicId) {
+      setSelectedTopic(prev => prev ? { ...prev, isLocked: !prev.isLocked } : null);
+    }
+  };
 
   // Vote handling functions
   const handleVoteTopic = (topicId: string, voteType: 'up' | 'down') => {
@@ -578,25 +627,81 @@ const Forum = () => {
     return (
       <div className="space-y-8">
         {/* Topic Detail Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleBackToList} className="flex items-center gap-2">
-            <ArrowUp className="w-4 h-4 rotate-90" />
-            Back to Forum
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{selectedTopic.title}</h1>
-            <div className="flex items-center gap-3 mt-2">
-              <Badge className={categoryInfo.color}>
-                {categoryInfo.icon} {categoryInfo.name}
-              </Badge>
-              <Badge className={getTopicStatusColor(selectedTopic.status)} variant="outline">
-                {selectedTopic.status}
-              </Badge>
-              <span className="text-gray-500 text-sm">
-                {selectedTopic.viewsCount} views • {selectedTopic.repliesCount} replies
-              </span>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={handleBackToList} className="flex items-center gap-2">
+              <ArrowUp className="w-4 h-4 rotate-90" />
+              Back to Forum
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{selectedTopic.title}</h1>
+              <div className="flex items-center gap-3 mt-2">
+                <Badge className={categoryInfo.color}>
+                  {categoryInfo.icon} {categoryInfo.name}
+                </Badge>
+                <Badge className={getTopicStatusColor(selectedTopic.status)} variant="outline">
+                  {selectedTopic.status}
+                </Badge>
+                {selectedTopic.isPinned && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    <Pin className="w-3 h-3 mr-1" />
+                    Fixado
+                  </Badge>
+                )}
+                {selectedTopic.isLocked && (
+                  <Badge variant="secondary" className="bg-red-100 text-red-800">
+                    <Lock className="w-3 h-3 mr-1" />
+                    Bloqueado
+                  </Badge>
+                )}
+                <span className="text-gray-500 text-sm">
+                  {selectedTopic.viewsCount} views • {selectedTopic.repliesCount} replies
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Moderation Actions (Teachers and Admins only) */}
+          {isModerator && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant={selectedTopic.isPinned ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleTogglePin(selectedTopic.id)}
+                className="flex items-center gap-2"
+              >
+                {selectedTopic.isPinned ? (
+                  <>
+                    <PinOff className="w-4 h-4" />
+                    Desfixar
+                  </>
+                ) : (
+                  <>
+                    <Pin className="w-4 h-4" />
+                    Fixar
+                  </>
+                )}
+              </Button>
+              <Button
+                variant={selectedTopic.isLocked ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleToggleLock(selectedTopic.id)}
+                className="flex items-center gap-2"
+              >
+                {selectedTopic.isLocked ? (
+                  <>
+                    <Unlock className="w-4 h-4" />
+                    Desbloquear
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Bloquear
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Original Topic */}
@@ -723,22 +828,36 @@ const Forum = () => {
           {/* Reply Form */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Add Your Reply</h3>
-              <div className="space-y-4">
-                <Textarea
-                  placeholder="Share your thoughts, provide help, or ask follow-up questions..."
-                  value={newReply}
-                  onChange={(e) => setNewReply(e.target.value)}
-                  rows={4}
-                  className="w-full"
-                />
-                <div className="flex justify-end">
-                  <Button onClick={handleSubmitReply} className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    Post Reply
-                  </Button>
+              {selectedTopic.isLocked ? (
+                <div className="text-center py-8">
+                  <Lock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    Este tópico está bloqueado
+                  </h3>
+                  <p className="text-gray-500">
+                    Novas respostas não são permitidas neste momento. Entre em contato com um moderador se tiver dúvidas.
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold mb-4">Add Your Reply</h3>
+                  <div className="space-y-4">
+                    <Textarea
+                      placeholder="Share your thoughts, provide help, or ask follow-up questions..."
+                      value={newReply}
+                      onChange={(e) => setNewReply(e.target.value)}
+                      rows={4}
+                      className="w-full"
+                    />
+                    <div className="flex justify-end">
+                      <Button onClick={handleSubmitReply} className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Post Reply
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -859,6 +978,7 @@ const Forum = () => {
                     <div className="flex-1">
                       <div className="flex items-start gap-2 mb-2">
                         {topic.isPinned && <Pin className="w-4 h-4 text-yellow-600 mt-1" />}
+                        {topic.isLocked && <Lock className="w-4 h-4 text-red-600 mt-1" />}
                         {topic.isResolved && <CheckCircle className="w-4 h-4 text-green-600 mt-1" />}
                         <h3
                           className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"

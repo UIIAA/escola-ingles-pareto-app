@@ -105,7 +105,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, userActions }) => {
     // Pages
     { type: 'page', title: 'Dashboard', description: 'Overview and progress tracking', path: '/dashboard' },
     { type: 'page', title: 'Learning Paths', description: 'Structured English courses and learning tracks', path: '/learning' },
-    { type: 'page', title: 'Class Catalog', description: 'Browse available lesson templates and courses', path: '/catalog' },
     { type: 'page', title: 'Schedule', description: 'Book and manage your English classes', path: '/schedule' },
     { type: 'page', title: 'Forum', description: 'Community discussions, Q&A, and help', path: '/forum' },
     { type: 'page', title: 'AI Chat', description: 'Practice English with AI assistant and conversation partner', path: '/ai-chat' },
