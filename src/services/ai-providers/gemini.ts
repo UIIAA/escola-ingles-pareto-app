@@ -15,7 +15,8 @@ export interface GeminiServiceConfig {
 }
 
 export class GeminiService {
-  private generativeAI: GoogleGenerativeAI;
+  // null = sem chave = modo demo: nenhuma mensagem sai do navegador.
+  private generativeAI: GoogleGenerativeAI | null;
   private model: string;
   private safetySettings: Array<{
     category: HarmCategory;
@@ -23,7 +24,7 @@ export class GeminiService {
   }>;
 
   constructor(config: GeminiServiceConfig) {
-    this.generativeAI = new GoogleGenerativeAI(config.apiKey);
+    this.generativeAI = config.apiKey ? new GoogleGenerativeAI(config.apiKey) : null;
     this.model = config.model || "gemini-pro";
     this.safetySettings = config.safetySettings || [
       {
@@ -53,6 +54,10 @@ export class GeminiService {
     mode: ConversationMode,
     previousMessages: string[] = []
   ): Promise<AIResponse> {
+    // Modo demo garantido aqui, não só na tela: sem chave, nada é enviado ao Google.
+    if (!this.generativeAI) {
+      return this.getSimulatedResponse(message, mode);
+    }
     try {
       // Obter o modelo
       const model = this.generativeAI.getGenerativeModel({ 
