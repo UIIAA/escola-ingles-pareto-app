@@ -80,8 +80,10 @@ const AIChat = () => {
   // Check if Gemini API is configured on mount
   useEffect(() => {
     const checkAPIConfiguration = () => {
-      const geminiAPIKey = import.meta.env.VITE_GOOGLE_GEMINI_API_KEY;
-      const isConfigured = geminiAPIKey && geminiAPIKey !== 'your_google_gemini_api_key';
+      // A chave do Gemini NÃO pode ficar em variável VITE_: o Vite embute no bundle e
+      // qualquer visitante a lê no navegador (25/10/2026). Até existir uma rota no
+      // servidor que chame a IA, o chat roda só em modo demo.
+      const isConfigured = false;
       setApiConfigured(isConfigured);
 
       if (!isConfigured) {

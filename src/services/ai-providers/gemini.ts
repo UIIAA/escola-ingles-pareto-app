@@ -439,6 +439,7 @@ export class GeminiService {
 
 // Instância singleton do serviço Gemini
 export const geminiService = new GeminiService({
-  apiKey: import.meta.env.VITE_GOOGLE_GEMINI_API_KEY || '',
+  // Sem chave no front (ver AIChat.tsx): VITE_ vaza no bundle. Modo demo até haver backend.
+  apiKey: '',
   model: "gemini-pro"
 });

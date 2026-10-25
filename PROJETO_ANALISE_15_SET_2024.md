@@ -2843,7 +2843,7 @@ Após análise detalhada com full-stack architect, descobrimos que:
 - ❌ **Removido**: OpenAI GPT-4 + Anthropic Claude (alto custo ~$0.03/1K tokens)
 - ✅ **Adicionado**: Google Gemini API (custo-efetivo ~$0.001/1K tokens)
 - 💰 **Economia**: 97% menor custo operacional
-- 🔑 **API Key**: AIzaSyBuUdvQwjwxtil3C-8ARXyTHIcPVRl1ofI
+- 🔑 **API Key**: sua_chave_aqui
 - 🎯 **Target Cost**: <$0.50/user/month (vs $15+ com OpenAI)
 
 ### **📊 OBJETIVOS (8-10 dias total)**
